@@ -387,6 +387,40 @@ por resultado.
 
 ---
 
+<a id="d-21"></a>
+## D-21 · Un bono no se anula nunca, y el hash de contraseña no se toca
+
+**Contexto.** Dos puntos quedaron abiertos en la revisión de confiabilidad del 2026-09-22 y se
+cerraron el 2026-09-23 por decisión de KOAJ, no por una limitación técnica. Se anotan porque los
+dos parecen defectos desde el código y no lo son: sin este registro, alguien los va a "arreglar".
+
+**Decisión.**
+
+*Anulación de un bono.* No existe. Es política de KOAJ: un cobro con bono no se deshace, ni desde
+el POS ni por ningún otro camino del módulo. Lo que ahora se llamaba «responder ACCEPTED sin
+devolverle el saldo a Ogloba» no es un defecto pendiente de implementar: el escenario no ocurre, y
+el módulo lo impide.
+
+*Hash de las contraseñas de cajero.* Se queda como está. Se propuso agregarle sal —hoy es SHA-256
+sin sal— y KOAJ decidió no cambiarlo: funciona, y migrar el formato en 512 tiendas arriesga dejar
+cajas sin poder operar por un beneficio que no se considera prioritario. Si algún día se cambia,
+tiene que ser con migración gradual (validar el formato viejo y actualizar al nuevo en el siguiente
+ingreso correcto), nunca de golpe.
+
+**Consecuencia.** La prohibición de anular está cerrada en los cuatro caminos por los que HiPOS
+podría pedirla, y eso hay que mantenerlo: `REFUND` y `VOID_TRANSACTION` se rechazan, y las banderas
+`ExecuteVoidWhenAvailable` y `SupportsTransactionQuery` van en `false`. Las dos banderas son
+sutiles y ya fallaron una vez — ver [D-05](#d-05) y la nota de `HandleBehavior`.
+
+**Evidencia.** Verificado sobre el código el 2026-09-23: los únicos caminos que responden
+`ACCEPTED` son una venta realmente autorizada y `BATCH_CLOSE`, donde no se mueve plata (cada venta
+ya se reconcilió individualmente). El 2026-09-01 se probó `ExecuteVoidWhenAvailable=true` y hubo
+que revertirlo al día siguiente: los abonos dejaron de llegar como `REFUND`, se colaron por
+`VOID_TRANSACTION` y se respondieron `ACCEPTED` en silencio — cuatro abonos dados por hechos sin
+mover un peso.
+
+---
+
 ## Cómo agregar una decisión
 
 1. Siguiente identificador libre, con su ancla `<a id="d-NN"></a>`.
