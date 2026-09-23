@@ -871,27 +871,39 @@ public sealed class OglobaGiftCardProvider : IGiftCardProvider
                 OglobaFailureMapper.OperationNotPublished(relativePath));
         }
 
-        using var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            new Uri(_options.BaseAddress, resolvedPath!));
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         // Todos los GET del proveedor son de solo lectura (conectividad, productos, saldo del
         // comercio): ninguno mueve plata, así que van con el tope corto.
         timeout.CancelAfter(_options.QueryTimeout);
-        ApplyAuthentication(request, storeId, credentialResult.Value);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.TryAddWithoutValidation(ApiVersionHeader, _options.ApiVersion);
-        request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(AcceptLanguageHeader));
+
+        HttpRequestMessage BuildRequest()
+        {
+            var message = new HttpRequestMessage(
+                HttpMethod.Get,
+                new Uri(_options.BaseAddress, resolvedPath!));
+
+            ApplyAuthentication(message, storeId, credentialResult.Value);
+            message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            message.Headers.TryAddWithoutValidation(ApiVersionHeader, _options.ApiVersion);
+            message.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(AcceptLanguageHeader));
+
+            return message;
+        }
 
         string responseBody = string.Empty;
         string? errorCode = null;
 
         try
         {
-            using var response = await _httpClient.SendAsync(
-                request,
-                HttpCompletionOption.ResponseHeadersRead,
+            // Acá el reintento es el caso fácil: una lectura no deja nada a medias del otro lado,
+            // así que se reintenta ante cualquier fallo de red, timeout incluido. Es lo que
+            // convierte un parpadeo del Wi-Fi de la tienda en medio segundo de demora en vez de un
+            // error en pantalla.
+            using var response = await SendWithRetryAsync(
+                BuildRequest,
+                OglobaRetryPolicy.ReadAttempts,
+                OglobaRetryPolicy.ShouldRetryRead,
                 timeout.Token);
 
             if (!response.IsSuccessStatusCode)
@@ -998,6 +1010,56 @@ public sealed class OglobaGiftCardProvider : IGiftCardProvider
     /// consultas de solo lectura pasan <c>_options.QueryTimeout</c>: no dejan nada a medias si se
     /// caen, así que no tiene sentido hacer esperar al cajero el margen completo.
     /// </param>
+    /// <summary>
+    /// Envía y, si el fallo lo permite, reintenta — construyendo un request nuevo cada vez.
+    /// <para>
+    /// La decisión de SI reintentar no vive acá: la toma <paramref name="shouldRetry"/>, que en
+    /// las escrituras es deliberadamente restrictivo. Este método solo cuenta intentos y espera.
+    /// </para>
+    /// <para>
+    /// La espera pasa por el mismo token que el resto de la llamada, así que el tope de tiempo de
+    /// la operación sigue mandando: los reintentos no pueden estirar un cobro más allá de lo que
+    /// la pasarela aguanta — que es justo lo que haría que su error tapara nuestro camino de
+    /// resultado incierto.
+    /// </para>
+    /// </summary>
+    private async Task<HttpResponseMessage> SendWithRetryAsync(
+        Func<HttpRequestMessage> buildRequest,
+        int attempts,
+        Func<Exception, bool> shouldRetry,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            var request = buildRequest();
+
+            try
+            {
+                return await _httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
+            }
+            catch (Exception exception) when (
+                attempt < attempts
+                && !cancellationToken.IsCancellationRequested
+                && shouldRetry(exception))
+            {
+                request.Dispose();
+                Log($"Reintento {attempt} de {attempts - 1} tras {exception.GetType().Name}.");
+
+                // Si el tope de la operación vence durante la espera, sale por cancelación y el
+                // llamador lo trata como timeout — que es lo correcto: no quedó nada colgando.
+                await Task.Delay(OglobaRetryPolicy.Delay(attempt), cancellationToken);
+            }
+            catch
+            {
+                request.Dispose();
+                throw;
+            }
+        }
+    }
+
     private async Task<PortResult<TResponse>> PostAsync<TRequest, TResponse>(
         string relativePath,
         TRequest payload,
@@ -1023,32 +1085,47 @@ public sealed class OglobaGiftCardProvider : IGiftCardProvider
                 OglobaFailureMapper.OperationNotPublished(relativePath));
         }
 
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            new Uri(_options.BaseAddress, resolvedPath!));
         using var timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         timeoutSource.CancelAfter(timeout ?? _options.RequestTimeout);
-        ApplyAuthentication(request, storeId, credentialResult.Value);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.TryAddWithoutValidation(ApiVersionHeader, _options.ApiVersion);
-        request.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(AcceptLanguageHeader));
 
         // Serializamos UNA sola vez — se usa tanto para el body del request como para
         // el log de tráfico UAT. Importante: NO contiene password de Basic Auth (solo
         // viaja en el header).
         var requestBodyJson = JsonSerializer.Serialize(payload, SerializerOptions);
 
+        // Cada intento arma SU PROPIO HttpRequestMessage: uno ya enviado no se puede reenviar
+        // —su contenido quedó consumido— y reutilizarlo lanza InvalidOperationException, que en
+        // este camino se vería como un fallo raro y sin relación con la red.
+        HttpRequestMessage BuildRequest()
+        {
+            var message = new HttpRequestMessage(
+                HttpMethod.Post,
+                new Uri(_options.BaseAddress, resolvedPath!));
+
+            ApplyAuthentication(message, storeId, credentialResult.Value);
+            message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            message.Headers.TryAddWithoutValidation(ApiVersionHeader, _options.ApiVersion);
+            message.Headers.AcceptLanguage.Add(new StringWithQualityHeaderValue(AcceptLanguageHeader));
+            message.Content = new StringContent(requestBodyJson, Encoding.UTF8, "application/json");
+
+            return message;
+        }
+
         try
         {
-            request.Content = new StringContent(
-                requestBodyJson,
-                Encoding.UTF8,
-                "application/json");
-
-            using var response = await _httpClient.SendAsync(
-                request,
-                HttpCompletionOption.ResponseHeadersRead,
+            // REINTENTO MUY ACOTADO, y conviene entender qué queda fuera.
+            // ===================================================================================
+            // Esto mueve plata. Un timeout NO se reintenta: significa que la petición salió y
+            // Ogloba pudo haberla aplicado, así que repetirla descuenta el bono dos veces. Solo se
+            // reintenta cuando se puede demostrar que nunca llegó al servidor —no había con quién
+            // conectarse, el nombre no resolvió—, que es el parpadeo de red típico de una tienda.
+            // Todo lo demás sale por el camino de resultado incierto, que es recuperable.
+            // Ver OglobaRetryPolicy.
+            using var response = await SendWithRetryAsync(
+                BuildRequest,
+                OglobaRetryPolicy.WriteAttempts,
+                OglobaRetryPolicy.ShouldRetryWrite,
                 timeoutSource.Token);
 
             if (!response.IsSuccessStatusCode)
