@@ -213,6 +213,30 @@
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
+	<!-- Passphrase del sandbox de Ogloba, inyectada al compilar.
+	     =====================================================================================
+	     El repositorio es público y ese valor es una credencial real compartida por las tiendas
+	     KOAJ de prueba, así que no puede estar en el código. Quien compila la define:
+
+	         $env:PERMODA_SANDBOX_PASSWORD = '...'
+
+	     Sin la variable, el autocompletado de la pantalla de configuración deja ese campo vacío y
+	     el tester lo pega a mano. Es una comodidad, no un requisito: nada se rompe sin ella.
+
+	     La condición sobre Release NO es decorativa. Es lo que garantiza que esta credencial no
+	     pueda terminar en el APK productivo aunque alguien tenga la variable definida en su
+	     terminal al compilar producción — que es exactamente el descuido que se quiere impedir. -->
+	<PropertyGroup Condition="'$(Configuration)' != 'Release'">
+		<PermodaSandboxPassword Condition="'$(PermodaSandboxPassword)' == ''">$(PERMODA_SANDBOX_PASSWORD)</PermodaSandboxPassword>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Configuration)' != 'Release' And '$(PermodaSandboxPassword)' != ''">
+		<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+			<_Parameter1>PermodaSandboxPassword</_Parameter1>
+			<_Parameter2>$(PermodaSandboxPassword)</_Parameter2>
+		</AssemblyAttribute>
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />

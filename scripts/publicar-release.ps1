@@ -109,6 +109,24 @@ Get-ChildItem -Path 'src', 'tests' -Include 'obj', 'bin' -Recurse -Directory -Er
 Bien 'obj/ y bin/ borrados'
 
 # ---------------------------------------------------------------------------------------------
+Paso 'Passphrase de sandbox'
+
+# Solo aplica a UAT: es lo que hace que la pantalla de configuración autocomplete la contraseña de
+# co-ts al montar una terminal de pruebas. No está en el código porque el repositorio es público.
+#
+# En Release ni se mira. El proyecto además ignora la propiedad fuera de UAT/Debug, así que aunque
+# alguien tenga la variable definida en su terminal, no puede colarse en el APK productivo.
+if ($Configuracion -eq 'UAT') {
+    if ($env:PERMODA_SANDBOX_PASSWORD) {
+        Bien 'Se inyectará la passphrase de sandbox (autocompletado activo)'
+    } else {
+        Write-Host "  AVISO  Sin PERMODA_SANDBOX_PASSWORD: el autocompletado dejará la contraseña vacía y habrá que pegarla a mano." -ForegroundColor Yellow
+    }
+} else {
+    Bien 'Producción: la passphrase de sandbox no se incluye'
+}
+
+# ---------------------------------------------------------------------------------------------
 Paso "Compilación ($Configuracion, con AOT — toma varios minutos)"
 
 dotnet publish src\Permoda.Pay.Maui\Permoda.Pay.Maui.csproj -c $Configuracion -f net10.0-android --verbosity quiet | Out-Null

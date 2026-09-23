@@ -19,20 +19,32 @@ public sealed class AppEnvironment
     /// Passphrase del sandbox de Ogloba (co-ts), para autocompletar la configuración de una
     /// terminal de pruebas de un toque.
     /// <para>
-    /// <b>Va vacía en el repositorio y eso es deliberado.</b> Este repositorio es público, y ese
-    /// valor es una credencial real —compartida por todas las tiendas KOAJ de prueba—, así que no
-    /// puede vivir en el código. Antes estaba acá como <c>const</c>, y además fuera del <c>#if</c>:
-    /// como los <c>const</c> se graban en los metadatos del ensamblado aunque su rama no se
-    /// compile, la passphrase viajaba también dentro del APK de PRODUCCIÓN, que CloudLicense
-    /// distribuye y cualquiera puede descargar.
+    /// <b>No está en el código: la pone quien compila.</b> Este repositorio es público y ese valor
+    /// es una credencial real, compartida por todas las tiendas KOAJ de prueba. Se inyecta al
+    /// compilar desde la variable de entorno <c>PERMODA_SANDBOX_PASSWORD</c> y queda como metadato
+    /// del ensamblado; el repositorio nunca la ve.
     /// </para>
     /// <para>
-    /// Con el valor vacío no se rompe nada: el autocompletado simplemente no rellena ese campo y
-    /// quien monta la terminal de pruebas lo pega a mano una vez. Quien la necesite, que la pida
-    /// por el canal por el que se piden las credenciales — no por el código fuente.
+    /// Si la variable no está definida, esto devuelve vacío y el autocompletado simplemente no
+    /// rellena ese campo — quien monta la terminal lo pega a mano. Nada se rompe: es una comodidad,
+    /// no un requisito.
+    /// </para>
+    /// <para>
+    /// Y no puede colarse en producción: el <c>#if</c> excluye este miembro, y el proyecto además
+    /// solo emite el metadato fuera de la configuración Release. Antes esto era un <c>const</c>
+    /// fuera del <c>#if</c>, y como los <c>const</c> se graban en los metadatos aunque su rama no
+    /// se compile, la passphrase viajaba dentro del APK de PRODUCCIÓN — que CloudLicense distribuye
+    /// y cualquiera puede descargar.
     /// </para>
     /// </summary>
-    private const string SandboxPassword = "";
+    private static string SandboxPassword =>
+        typeof(AppEnvironment).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyMetadataAttribute), false)
+            .Cast<System.Reflection.AssemblyMetadataAttribute>()
+            .FirstOrDefault(attribute =>
+                string.Equals(attribute.Key, "PermodaSandboxPassword", StringComparison.Ordinal))
+            ?.Value
+        ?? string.Empty;
 #endif
 
     public AppEnvironment(
