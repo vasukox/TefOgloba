@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vmpos="clr-namespace:Permoda.Pay.Maui.ViewModels.Pos"
+             x:Class="Permoda.Pay.Maui.Views.Controls.ResultOverlayView"
+             x:Name="RootView">
+
+    <!-- Panel de cierre de operación. Se queda en pantalla hasta que el cajero lo cierra:
+         es la información que le repite al cliente ("tu bono salió a este correo"), y eso
+         no puede vivir en un aviso que se desvanece solo. -->
+    <Grid>
+
+        <BoxView x:Name="Scrim" Color="{StaticResource TextPrimary}" Opacity="0">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnDismissRequested" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <Border x:Name="Card"
+                BackgroundColor="{StaticResource Surface}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 26"
+                Padding="0"
+                Margin="24"
+                MaximumWidthRequest="660"
+                HorizontalOptions="Center"
+                VerticalOptions="Center">
+            <Border.Shadow>
+                <Shadow Brush="{StaticResource ShadowBrush}" Opacity="0.30" Radius="36" Offset="0,16" />
+            </Border.Shadow>
+
+            <Grid RowDefinitions="Auto,Auto,Auto">
+
+                <!-- Banda de estado: verde si salió al menos un bono, roja si no salió ninguno -->
+                <Border x:Name="Band"
+                        Grid.Row="0"
+                        Background="{StaticResource SuccessButtonBrush}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 26,26,0,0"
+                        Padding="24,24,24,22">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+
+                        <Border x:Name="Badge"
+                                Grid.Column="0"
+                                WidthRequest="58"
+                                HeightRequest="58"
+                                BackgroundColor="#33FFFFFF"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 29"
+                                VerticalOptions="Center">
+                            <Label x:Name="BadgeGlyph"
+                                   Text="✓"
+                                   FontSize="30"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource OnDark}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+
+                        <VerticalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                            <Label Text="{Binding Headline, Source={x:Reference RootView}}"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{StaticResource OnDark}" />
+
+                            <!-- Cuando nada salió, acá va el MOTIVO y no un conteo, así que tiene
+                                 que leerse completo: 15pt y WordWrap. A 13pt truncado, la
+                                 explicación se cortaba justo donde empezaba a servir. -->
+                            <Label Text="{Binding Subline, Source={x:Reference RootView}}"
+                                   FontSize="15"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{StaticResource OnHero}"
+                                   IsVisible="{Binding HasSubline, Source={x:Reference RootView}}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <!-- Detalle bono por bono: a quién salió y con qué referencia -->
+                <ScrollView Grid.Row="1" MaximumHeightRequest="330">
+                    <VerticalStackLayout x:Name="LinesHost"
+                                         Padding="20,18,20,4"
+                                         Spacing="10"
+                                         BindableLayout.ItemsSource="{Binding Lines, Source={x:Reference RootView}}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vmpos:OperationResultLine">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+
+                                    <Border Grid.Column="0"
+                                            WidthRequest="34"
+                                            HeightRequest="34"
+                                            BackgroundColor="{StaticResource SuccessTint}"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 11"
+                                            VerticalOptions="Center">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsRejected}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource ErrorTint}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsPending}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource PrimaryTint}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+
+                                        <Label Text="✓"
+                                               FontSize="17"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Success}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsApproved}" />
+                                        <Label Text="⏳"
+                                               FontSize="15"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsPending}" />
+                                        <Label Text="✗"
+                                               FontSize="17"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Error}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsRejected}" />
+                                    </Border>
+
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                        <Label Text="{Binding Target}"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               LineBreakMode="TailTruncation" />
+
+                                        <!-- El motivo se lee entero: WordWrap y no truncado, que
+                                             era lo que cortaba la explicación a la mitad. En un
+                                             rechazo sube de tamaño y se pinta en rojo, porque es
+                                             la única información accionable de la fila. -->
+                                        <Label Text="{Binding Detail}"
+                                               FontSize="12"
+                                               LineBreakMode="WordWrap"
+                                               TextColor="{StaticResource TextSecondary}">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsRejected}" Value="True">
+                                                    <Setter Property="FontSize" Value="13" />
+                                                    <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+
+                                        <!-- Rastro para soporte. Deliberadamente discreto: sirve
+                                             para reportar el caso, no para operar. -->
+                                        <Label Text="{Binding Technical}"
+                                               FontSize="10"
+                                               TextColor="{StaticResource TextMuted}"
+                                               LineBreakMode="TailTruncation"
+                                               IsVisible="{Binding HasTechnical}" />
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="2"
+                                           Text="{Binding StatusLabel}"
+                                           FontSize="10"
+                                           FontAttributes="Bold"
+                                           CharacterSpacing="1"
+                                           TextColor="{StaticResource Success}"
+                                           VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsRejected}" Value="True">
+                                                <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsPending}" Value="True">
+                                                <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <VerticalStackLayout x:Name="Footer" Grid.Row="2" Padding="20,14,20,20" Spacing="10">
+                    <Label Text="{Binding FootNote, Source={x:Reference RootView}}"
+                           FontSize="11"
+                           TextColor="{StaticResource TextMuted}"
+                           IsVisible="{Binding HasFootNote, Source={x:Reference RootView}}" />
+                    <Button Text="Listo"
+                            Style="{StaticResource PrimaryButton}"
+                            HeightRequest="52"
+                            Clicked="OnDismissRequested" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>

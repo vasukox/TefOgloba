@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             x:Class="Permoda.Pay.Maui.Views.Controls.PosHeaderView">
+    <Border Style="{StaticResource HeroCard}">
+        <Border.Behaviors>
+            <behaviors:EntranceBehavior />
+        </Border.Behaviors>
+        <VerticalStackLayout Spacing="10">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="TIENDA ACTIVA" Style="{StaticResource HeroLabel}" VerticalOptions="Center" />
+                <Border Grid.Column="1" IsVisible="{Binding IsSandbox}" Padding="12,6"
+                        BackgroundColor="{StaticResource Accent}" StrokeThickness="0"
+                        StrokeShape="RoundRectangle 20">
+                    <Label Text="SANDBOX" TextColor="{StaticResource OnDark}" FontSize="11" FontAttributes="Bold" />
+                </Border>
+            </Grid>
+
+            <Label Text="{Binding StoreName}" Style="{StaticResource HeroValue}" IsVisible="{Binding HasStoreName}" />
+            <Label Text="{Binding StoreId, StringFormat='Tienda {0}'}" Style="{StaticResource HeroCaption}" />
+            <Label Text="{Binding Cashier, StringFormat='Cajero {0}'}" Style="{StaticResource HeroCaption}" />
+
+            <Border IsVisible="{Binding HasBusinessUnitBalance}" Padding="10,5" Margin="0,4,0,0"
+                    BackgroundColor="{StaticResource PrimaryTint}" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 16" HorizontalOptions="Start">
+                <Label Text="{Binding BusinessUnitBalanceDisplay, StringFormat='💰 Saldo comercio: {0}'}"
+                       TextColor="{StaticResource PrimaryDark}" FontSize="12" FontAttributes="Bold" />
+            </Border>
+
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Button Grid.Column="0"
+                        Text="{Binding ConnectivityText}"
+                        Command="{Binding CheckConnectivityCommand}"
+                        HeightRequest="42" CornerRadius="21" FontSize="13" FontAttributes="Bold"
+                        TextColor="{StaticResource OnDark}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding ConnectivityState}" Value="unknown">
+                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryDark}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding ConnectivityState}" Value="checking">
+                            <Setter Property="BackgroundColor" Value="{StaticResource PrimaryDark}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding ConnectivityState}" Value="online">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Success}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Button" Binding="{Binding ConnectivityState}" Value="offline">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Error}" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Grid.Column="1" Text="Cambiar cajero"
+                        Command="{Binding ChangeCashierCommand}"
+                        HeightRequest="42" CornerRadius="21" FontSize="13"
+                        BackgroundColor="Transparent" TextColor="{StaticResource OnHero}" BorderColor="{StaticResource OnHeroMuted}" BorderWidth="1" />
+            </Grid>
+        </VerticalStackLayout>
+    </Border>
+</ContentView>

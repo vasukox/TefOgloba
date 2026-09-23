@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.Pos.StatusBannerView"
+             xmlns:vm="clr-namespace:Permoda.Pay.Maui.ViewModels.Pos">
+    <Border BindingContext="{Binding}" IsVisible="{Binding IsVisible}" StrokeShape="RoundRectangle 18" StrokeThickness="1.5">
+        <Border.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding Level}" Value="{x:Static vm:StatusBannerLevel.Success}">
+                <Setter Property="BackgroundColor" Value="{StaticResource SuccessTint}" />
+                <Setter Property="Stroke" Value="{StaticResource Success}" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border" Binding="{Binding Level}" Value="{x:Static vm:StatusBannerLevel.Error}">
+                <Setter Property="BackgroundColor" Value="{StaticResource ErrorTint}" />
+                <Setter Property="Stroke" Value="{StaticResource Error}" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border" Binding="{Binding Level}" Value="{x:Static vm:StatusBannerLevel.Info}">
+                <Setter Property="BackgroundColor" Value="{StaticResource InfoTint}" />
+                <Setter Property="Stroke" Value="{StaticResource Info}" />
+            </DataTrigger>
+        </Border.Triggers>
+        <Grid Padding="16,20" ColumnDefinitions="Auto,*" ColumnSpacing="14" RowDefinitions="Auto,Auto">
+            <Label x:Name="IconLabel"
+                   Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                   FontSize="26" FontAttributes="Bold"
+                   VerticalOptions="Center"
+                   TextColor="{StaticResource TextPrimary}">
+                <Label.Triggers>
+                    <DataTrigger TargetType="Label" Binding="{Binding Level}" Value="{x:Static vm:StatusBannerLevel.Success}">
+                        <Setter Property="Text" Value="✓" />
+                        <Setter Property="TextColor" Value="{StaticResource Success}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Label" Binding="{Binding Level}" Value="{x:Static vm:StatusBannerLevel.Error}">
+                        <Setter Property="Text" Value="⚠" />
+                        <Setter Property="TextColor" Value="{StaticResource Error}" />
+                    </DataTrigger>
+                    <DataTrigger TargetType="Label" Binding="{Binding Level}" Value="{x:Static vm:StatusBannerLevel.Info}">
+                        <Setter Property="Text" Value="ⓘ" />
+                        <Setter Property="TextColor" Value="{StaticResource Info}" />
+                    </DataTrigger>
+                </Label.Triggers>
+            </Label>
+            <Label Grid.Row="0" Grid.Column="1" Text="{Binding Title}" Style="{StaticResource CardTitle}" />
+            <Label Grid.Row="1" Grid.Column="1" Text="{Binding Message}" Style="{StaticResource Caption}" />
+        </Grid>
+    </Border>
+</ContentView>

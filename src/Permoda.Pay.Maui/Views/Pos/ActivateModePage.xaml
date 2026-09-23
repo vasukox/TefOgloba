@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             x:Class="Permoda.Pay.Maui.Views.Pos.ActivateModePage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Activar bono">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <controls:TopBarView Grid.Row="0" ParentText="Inicio" SectionText="Activar bono" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="24,18,24,20" Spacing="18" MaximumWidthRequest="1400">
+
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="PASO 1 · TIPO DE BONO"
+                           Style="{StaticResource FieldLabel}"
+                           TextColor="{StaticResource Primary}" />
+                    <Label Text="¿Qué bono vas a activar?"
+                           FontSize="28"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource TextPrimary}" />
+                    <Label Text="La pantalla siguiente te pedirá solo lo que ese tipo necesita."
+                           FontSize="13"
+                           TextColor="{StaticResource TextSecondary}" />
+                </VerticalStackLayout>
+
+                <!-- Dos tarjetas iguales, como en el menú: misma mecánica en toda la app. -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="18" MinimumHeightRequest="280">
+
+                    <Border Grid.Column="0"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 24"
+                            Padding="28,32">
+                        <Border.Shadow>
+                            <Shadow Brush="{StaticResource ShadowBrush}" Opacity="0.12" Radius="18" Offset="0,6" />
+                        </Border.Shadow>
+                        <!-- Entrada escalonada + hundido al tocar. Sin esto la tarjeta era un
+                             rectángulo muerto: se tocaba y no pasaba nada hasta que aparecía la
+                             pantalla siguiente, así que el cajero no sabía si había registrado
+                             el toque y volvía a tocar. -->
+                        <Border.Behaviors>
+                            <behaviors:EntranceBehavior />
+                            <behaviors:PressableBehavior />
+                        </Border.Behaviors>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ChooseCommand}" CommandParameter="physical" />
+                        </Border.GestureRecognizers>
+
+                        <VerticalStackLayout Spacing="16" VerticalOptions="Center">
+                            <Border WidthRequest="72" HeightRequest="72"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    HorizontalOptions="Start">
+                                <Image Source="ic_card.png"
+                                       WidthRequest="34" HeightRequest="34"
+                                       Aspect="AspectFit"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Label Text="Bono físico"
+                                   FontSize="28"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextPrimary}" />
+
+                            <Label Text="La tarjeta plástica que el cliente se lleva. Se escanea su serial."
+                                   FontSize="14"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{StaticResource TextSecondary}" />
+
+                            <Label Text="Continuar  →"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   Margin="0,6,0,0" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 24"
+                            Padding="28,32">
+                        <Border.Shadow>
+                            <Shadow Brush="{StaticResource ShadowBrush}" Opacity="0.12" Radius="18" Offset="0,6" />
+                        </Border.Shadow>
+                        <!-- 90 ms después de la primera: las dos entran escalonadas, no de golpe. -->
+                        <Border.Behaviors>
+                            <behaviors:EntranceBehavior DelayMs="90" />
+                            <behaviors:PressableBehavior />
+                        </Border.Behaviors>
+                        <!-- El gesto se deja puesto: TapGestureRecognizer no tiene IsEnabled, y
+                             quien decide es el ViewModel, que ignora el toque cuando la opción no
+                             está disponible. La tarjeta se ve apagada y explica por qué, así que
+                             el cajero no la toca esperando algo. -->
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ChooseCommand}"
+                                                  CommandParameter="virtual" />
+                        </Border.GestureRecognizers>
+
+                        <VerticalStackLayout Spacing="16" VerticalOptions="Center">
+                            <Border WidthRequest="72" HeightRequest="72"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    HorizontalOptions="Start">
+                                <Image Source="ic_sparkles.png"
+                                       WidthRequest="34" HeightRequest="34"
+                                       Aspect="AspectFit"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Label Text="Bono virtual"
+                                   FontSize="28"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextPrimary}" />
+
+                            <!-- El texto lo decide el ambiente: con Order management Ogloba manda
+                                 el bono al correo; sin él se entrega impreso. El cajero tiene que
+                                 saberlo ANTES de pedirle el correo al cliente. -->
+                            <Label Text="{Binding VirtualDeliveryText}"
+                                   FontSize="14"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{StaticResource TextSecondary}" />
+
+                            <Label Text="Continuar  →"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   Margin="0,6,0,0" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Button Text="←  Volver al menú"
+                        Style="{StaticResource SecondaryButton}"
+                        MinimumWidthRequest="230"
+                        HorizontalOptions="Start"
+                        Command="{Binding BackToMenuCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

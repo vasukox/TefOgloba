@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.RouterPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             Title="Ogloba">
+
+    <!-- ANTESALA, no una pantalla más.
+         El Shell tiene que dibujar ALGO mientras se resuelve a dónde va el cajero, y ese
+         destino depende de cosas que solo se saben en runtime: si el cobro lo ordenó HiPOS,
+         si la terminal está configurada, si hay cajeros dados de alta.
+
+         Antes ese "algo" era Inicio, por ser el primer FlyoutItem. El cajero veía el menú
+         aparecer y desaparecer antes de llegar a Redimir: la "pestaña falsa". Esta página
+         existe para ocupar ese instante con la marca en vez de con una pantalla ajena.
+
+         No lleva texto de estado ("Cargando…", "Un momento…") a propósito: en el caso normal
+         dura menos de lo que toma leerlo, y un mensaje que parpadea se siente más lento que
+         ninguno. -->
+
+    <Grid RowDefinitions="*,Auto,*">
+
+        <VerticalStackLayout Grid.Row="1" Spacing="20" HorizontalOptions="Center">
+
+            <Border x:Name="Mark"
+                    WidthRequest="76"
+                    HeightRequest="76"
+                    Background="{StaticResource HeroBrush}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 24"
+                    HorizontalOptions="Center"
+                    Opacity="0"
+                    Scale="0.94">
+                <Label Text="O"
+                       FontSize="34"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource OnDark}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <VerticalStackLayout x:Name="Wordmark" Spacing="3" Opacity="0">
+                <Label Text="OGLOBA TEF"
+                       FontSize="15"
+                       FontAttributes="Bold"
+                       CharacterSpacing="3"
+                       HorizontalTextAlignment="Center"
+                       TextColor="{StaticResource TextPrimary}" />
+                <Label Text="TERMINAL DE BONOS"
+                       FontSize="10"
+                       CharacterSpacing="2"
+                       HorizontalTextAlignment="Center"
+                       TextColor="{StaticResource TextMuted}" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+
+        <!-- Barra de progreso fina al pie. Solo aparece si la espera se alarga —ver el
+             code-behind—: mostrarla siempre convertiría un salto instantáneo en una espera
+             anunciada. -->
+        <BoxView x:Name="Pulse"
+                 Grid.Row="2"
+                 HeightRequest="3"
+                 WidthRequest="120"
+                 CornerRadius="2"
+                 Color="{StaticResource Primary}"
+                 Opacity="0"
+                 VerticalOptions="End"
+                 Margin="0,0,0,54"
+                 HorizontalOptions="Center" />
+    </Grid>
+</ContentPage>

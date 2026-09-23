@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- El módulo declara los paquetes de HiPOS
+	     en <queries> para que PackageManager pueda resolver getCallingPackage() en Android 11+
+	     (sin <queries>, las llamadas a queryIntentActivities/getPackageInfo devuelven lista
+	     vacía por el paquete de la otra app). En runtime, HiPosPaymentActivity valida que el
+	     caller sea uno de estos antes de procesar el intent, así que un APK malicioso no puede
+	     suplantar al POS para extraer datos de recibos o invocar cobros. -->
+	<queries>
+		<package android:name="icg.android.start" />
+		<package android:name="com.icg.hiopos" />
+	</queries>
+	<!-- El tema de la aplicación tiene que declararse ACÁ. Sin él, Android usa el tema claro
+	     por defecto —con barra de título— para la ventana de arranque, y el cajero veía una
+	     pantalla en blanco con el nombre del módulo encima antes de llegar al TEF. -->
+	<application android:allowBackup="false" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" android:usesCleartextTraffic="false" android:theme="@style/Ogloba.Launch">
+		<!-- OJO: esta declaración manual GANA sobre el atributo [Activity(Theme=...)] del C#.
+		     El tema va acá o no se aplica — fue exactamente lo que hizo que la pantalla en
+		     blanco sobreviviera a tres intentos de quitarla desde código.
+		     Sin android:label a propósito: era el "Permoda Pay Oglobal" que se leía arriba. -->
+		<!-- configChanges: NOSOTROS manejamos rotación, teclado, idioma y densidad. Sin esto
+		     Android RECREA la Activity a mitad del cobro y el estado en memoria se pierde: el
+		     síntoma no se parece a la causa —el comprobante deja de imprimirse, o el módulo se
+		     cae con ObjectDisposedException— y nadie relaciona eso con "se giró el teclado".
+		     Ya nos costó una tanda de crashes al recrear la Activity.
+
+		     launchMode singleTop: si HiPOS nos manda otro intent mientras ya estamos al frente,
+		     Android reutiliza esta instancia y lo entrega por OnNewIntent —que ya implementamos—
+		     en vez de apilar una ventana nueva con su propia copia del estado.
+
+		     Se usa singleTop y NO singleTask a propósito: singleTask cambia además la afinidad
+		     de tarea, y el módulo ya tiene resuelto su modelo de tareas con MoveTaskToBack para
+		     que "Volver a HiPOS" devuelva el foco al POS. Cambiar eso reabriría un problema que
+		     ya está cerrado y medido. -->
+		<activity android:name="permoda.pay.maui.android.hipos.HiPosPaymentActivity"
+		          android:exported="true"
+		          android:launchMode="singleTop"
+		          android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|locale|layoutDirection|uiMode|density|fontScale"
+		          android:theme="@style/Ogloba.Invisible">
+
+			<!-- apk_name REAL: el que ICG dio de alta en CloudLicense. Verificado con aapt2
+			     sobre el APK que la propia nube distribuye — que resultó ser el nuestro.
+
+			     Sin este nombre el módulo entraba en un bucle cerrado: la nube pedía
+			     `permoglobal`, el APK no lo declaraba, nadie resolvía la acción, HiPOS lo leía
+			     como "módulo no instalado", bajaba el APK de CloudLicense (el nuestro, que
+			     tampoco lo declaraba) y volvía a empezar en cada arranque. Instalarlo a mano no
+			     lo rompía: el bucle estaba garantizado por construcción. -->
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.INITIALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.FINALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.GET_VERSION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.GET_BEHAVIOR" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.GET_CUSTOM_PARAMS" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.GET_PRINT_INFO" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.SHOW_SETUP_SCREEN" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.TRANSACTION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.READ_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.CHARGE_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.permoglobal.GET_CARD_DATA" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.INITIALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.FINALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.GET_VERSION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.GET_BEHAVIOR" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.GET_CUSTOM_PARAMS" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.GET_PRINT_INFO" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.SHOW_SETUP_SCREEN" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.TRANSACTION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.READ_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.CHARGE_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.oglobapay.GET_CARD_DATA" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+
+
+			<!-- apk_name candidato: Permoda Pay Oglobal -->
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.INITIALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.FINALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.GET_VERSION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.GET_BEHAVIOR" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.GET_CUSTOM_PARAMS" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.GET_PRINT_INFO" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.SHOW_SETUP_SCREEN" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.TRANSACTION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.READ_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.CHARGE_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.Permoda Pay Oglobal.GET_CARD_DATA" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+
+			<!-- apk_name candidato: PermodaPayOglobal -->
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.INITIALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.FINALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.GET_VERSION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.GET_BEHAVIOR" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.GET_CUSTOM_PARAMS" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.GET_PRINT_INFO" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.SHOW_SETUP_SCREEN" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.TRANSACTION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.READ_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.CHARGE_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.PermodaPayOglobal.GET_CARD_DATA" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+
+			<!-- apk_name candidato: ogloba -->
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.INITIALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.FINALIZE" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.GET_VERSION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.GET_BEHAVIOR" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.GET_CUSTOM_PARAMS" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.GET_PRINT_INFO" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.SHOW_SETUP_SCREEN" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.TRANSACTION" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.READ_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.CHARGE_CARD" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.electronicpayment.ogloba.GET_CARD_DATA" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+		</activity>
+
+		<!-- Aviso de totalización cancelada. Es lo que desbloquea la papelera sobre la línea de
+		     pago del bono: al recibirlo devolvemos el saldo a la tarjeta y HiPOS deja soltar la
+		     venta. Va junto con CallOnTotalizationCanceled=true en GET_BEHAVIOR; sin la bandera,
+		     HiPOS nunca manda este intent aunque esté declarado acá.
+
+		     OJO con el namespace: es `icg.actions.document.`, NO `icg.actions.electronicpayment.`
+		     como todo el resto del contrato TEF. Por eso es una Activity aparte — la de pagos
+		     despacha por el último segmento de las acciones de electronicpayment y esta no le
+		     resolvería.
+
+		     Se declaran los cuatro apk_name candidatos, igual que arriba: el que enruta es
+		     `permoglobal` (verificado con aapt2 sobre el APK que distribuye CloudLicense), y los
+		     otros quedan por si la nube cambia el alta sin avisar. -->
+		<!-- Mismo criterio que la Activity de pago: ver la nota de arriba. -->
+		<activity android:name="permoda.pay.maui.android.hipos.TotalizationCanceledActivity"
+		          android:exported="true"
+		          android:launchMode="singleTop"
+		          android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|locale|layoutDirection|uiMode|density|fontScale"
+		          android:theme="@style/Ogloba.Invisible">
+			<intent-filter>
+				<action android:name="icg.actions.document.permoglobal.TOTALIZATION_CANCELED" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.document.ogloba.TOTALIZATION_CANCELED" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.document.oglobapay.TOTALIZATION_CANCELED" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+			<intent-filter>
+				<action android:name="icg.actions.document.PermodaPayOglobal.TOTALIZATION_CANCELED" />
+				<category android:name="android.intent.category.DEFAULT" />
+			</intent-filter>
+		</activity>
+	</application>
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.INTERNET" />
+</manifest>

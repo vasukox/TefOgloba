@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:Permoda.Pay.Maui.Views.Pos"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             x:Class="Permoda.Pay.Maui.Views.Setup.SetupPage"
+             x:Name="SetupRoot"
+             Shell.FlyoutBehavior="Disabled"
+             Title="Configuración">
+
+    <!-- El menú lateral arranca APAGADO y solo vuelve cuando el PIN acierta.
+         =====================================================================================
+         Sin esto había una puerta de atrás: desde el ingreso de cajero se entraba a
+         "Configuración de administrador", aparecía la pantalla del PIN — y con ella el menú
+         hamburguesa. Abriéndolo se llegaba a Inicio, Consultar saldo o Bitácora SIN haber puesto
+         el PIN y SIN haber abierto turno. La comprobación seguía ahí, intacta; simplemente se le
+         pasaba por al lado.
+
+         Es el tipo de agujero que no se ve revisando la pantalla que protege, porque la pantalla
+         protegida funciona bien: lo que fallaba era que existiera otro camino. -->
+    <ContentPage.Triggers>
+        <DataTrigger TargetType="ContentPage" Binding="{Binding IsUnlocked}" Value="True">
+            <Setter Property="Shell.FlyoutBehavior" Value="Flyout" />
+        </DataTrigger>
+    </ContentPage.Triggers>
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="10" Padding="16,12,16,24">
+
+            <Border Style="{StaticResource HeroCard}">
+                <Border.Behaviors>
+                    <behaviors:EntranceBehavior />
+                </Border.Behaviors>
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="CONFIGURACIÓN (ADMIN)" Style="{StaticResource HeroLabel}" />
+                    <Label Text="Permoda Pay · Ogloba" Style="{StaticResource HeroValue}" />
+                    <Border IsVisible="{Binding IsSandbox}" Padding="12,6" Margin="0,4,0,0"
+                            BackgroundColor="{StaticResource Accent}" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 20" HorizontalOptions="Start">
+                        <Label Text="{Binding EnvironmentHost, StringFormat='● SANDBOX · {0}'}"
+                               TextColor="{StaticResource OnDark}" FontSize="12" FontAttributes="Bold" />
+                    </Border>
+                    <!-- En producción el distintivo NO lleva el host. El cajero no puede hacer
+                         nada con esa dirección, y escrita en pantalla queda a la vista de
+                         cualquiera que pase por el mostrador. En sandbox sí se muestra, porque
+                         ahí lo que importa es saber de un vistazo contra qué se está probando. -->
+                    <Border IsVisible="{Binding IsProduction}" Padding="12,6" Margin="0,4,0,0"
+                            BackgroundColor="{StaticResource Success}" StrokeThickness="0"
+                            StrokeShape="RoundRectangle 20" HorizontalOptions="Start">
+                        <Label Text="● PRODUCCIÓN"
+                               TextColor="{StaticResource OnDark}" FontSize="12" FontAttributes="Bold" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Desbloqueo por PIN (cuando ya está configurado) -->
+            <Border Style="{StaticResource Card}" IsVisible="{Binding ShowUnlock}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="ACCESO DE ADMINISTRADOR" Style="{StaticResource FieldLabel}" />
+                    <Label Text="Ingresa el PIN de administrador para editar la configuración." Style="{StaticResource Caption}" />
+                    <Border Style="{StaticResource InputField}">
+                        <Entry Placeholder="PIN" IsPassword="True" Keyboard="Numeric" Text="{Binding PinEntry}" />
+                    </Border>
+                    <Button Text="Desbloquear" Style="{StaticResource PrimaryButton}" Command="{Binding UnlockCommand}" />
+                    <!-- Salida para quien llegó acá sin el PIN. Sin esto queda atrapado: el menú
+                         lateral está apagado justamente hasta que el PIN acierte. -->
+                    <Button Text="Volver" Style="{StaticResource BorderlessButton}"
+                            FontSize="14" HeightRequest="44" Command="{Binding GoBackCommand}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Configuración (visible cuando está desbloqueado o es primer arranque) -->
+            <VerticalStackLayout Spacing="18" IsVisible="{Binding ShowConfig}">
+
+                <!-- Repartir la configuración al resto de la tienda. Vive acá y no en el alta de
+                     cajeros porque lo que se copia es la IDENTIDAD de la caja —tienda, llave,
+                     PIN—, y eso es lo que se administra en esta pantalla.
+
+                     Aparece solo con la caja COMPLETA: tienda, credenciales, PIN y al menos un
+                     cajero. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding CanReplicate}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="CONFIGURAR LAS DEMÁS CAJAS DE ESTA TIENDA" Style="{StaticResource FieldLabel}" />
+                        <Label Text="Esta caja ya está completa. Genera un código de 6 dígitos y con él configuras las demás sin volver a escribir nada."
+                               Style="{StaticResource Caption}" />
+                        <Label Text="Se copia: tienda, llave, dirección, cajeros con sus contraseñas y el PIN de administrador."
+                               Style="{StaticResource Caption}" />
+                        <Label Text="NO se copia el nombre de la caja. Cada una conserva el suyo — es lo que identifica dónde se hizo cada cobro."
+                               Style="{StaticResource Caption}"
+                               FontAttributes="Bold" />
+                        <Button Text="Replicar a otra caja"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="54"
+                                Command="{Binding ReplicateCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ARRIBA del paso 1 a propósito. Si esta tienda ya tiene una caja montada, copiar
+                     es un código de seis dígitos contra teclear una llave de 32 caracteres sin
+                     separadores — que es exactamente donde se producen los errores, y el error se
+                     ve como "Ogloba rechazó las credenciales", que no dice qué carácter quedó mal.
+                     Quien llega acá tiene que encontrarse el atajo antes que el camino largo.
+
+                     Solo en cajas SIN configurar: en una que ya opera, esto sería una forma de
+                     pisarle tienda, cajeros y llave sin querer. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding CanJoinReplication}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="¿YA HAY OTRA CAJA CONFIGURADA EN ESTA TIENDA?" Style="{StaticResource FieldLabel}" />
+                        <Label Text="Copia su configuración con un código de 6 dígitos en vez de escribirlo todo. Trae tienda, llave, cajeros y PIN."
+                               Style="{StaticResource Caption}" />
+                        <Button Text="Copiar de otra caja"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="54"
+                                Command="{Binding JoinReplicationCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding IsFirstRun}">
+                    <VerticalStackLayout Spacing="16">
+                        <Label Text="PASO 1 · CREAR PIN DE ADMINISTRADOR" Style="{StaticResource FieldLabel}" />
+                        <Label Text="Protege la configuración de la terminal. Mínimo 4 dígitos." Style="{StaticResource Caption}" />
+                        <Border Style="{StaticResource InputField}">
+                            <Entry Placeholder="Nuevo PIN" IsPassword="True" Keyboard="Numeric" Text="{Binding NewPin}" />
+                        </Border>
+                        <Border Style="{StaticResource InputField}">
+                            <Entry Placeholder="Confirmar PIN" IsPassword="True" Keyboard="Numeric" Text="{Binding ConfirmPin}" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="16">
+                        <Label Text="PASO 2 · IDENTIDAD DE LA CAJA" Style="{StaticResource FieldLabel}" />
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="TIENDA (STORE ID)" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource InputField}">
+                                <Entry Placeholder="Ej: K00036" Text="{Binding StoreId}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="CAJA / TERMINAL" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource InputField}">
+                                <Entry Placeholder="Ej: CAJA-01" Text="{Binding TerminalId}" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="CONTRASEÑA OGLOBA" Style="{StaticResource FieldLabel}" />
+                            <Border Style="{StaticResource InputField}">
+                                <Entry Placeholder="Contraseña de la tienda" IsPassword="True" Text="{Binding OglobaPassword}" />
+                            </Border>
+                            <Label Text="Déjala vacía para conservar la ya guardada." Style="{StaticResource Caption}" IsVisible="{Binding IsAlreadyConfigured}" />
+                        </VerticalStackLayout>
+
+                        <Label Text="{Binding StoreName, StringFormat='Nombre (Ogloba): {0}'}" Style="{StaticResource Caption}" />
+                        <Label Text="{Binding ActiveCashier, StringFormat='Cajero en turno: {0}'}" Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Detalles de conexión: SOLO en sandbox.
+                     El endpoint y la versión de la API son infraestructura. El cajero no puede
+                     hacer nada con ellos —la conexión se configura sola desde el INITIALIZE de
+                     HiPOS— y en pantalla quedan a la vista de cualquiera que pase por el
+                     mostrador, diciéndole a dónde apuntar. En sandbox sí sirven: es donde uno
+                     necesita confirmar contra qué está probando. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding IsSandbox}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="CONEXIÓN OGLOBA (AUTOMÁTICA)" Style="{StaticResource FieldLabel}" />
+                        <Label Text="{Binding EnvironmentName, StringFormat='Ambiente: {0}'}" Style="{StaticResource Caption}" />
+                        <Label Text="{Binding BaseUrl, StringFormat='Endpoint: {0}'}" Style="{StaticResource Caption}" />
+                        <Label Text="{Binding ApiVersion, StringFormat='API: X-WSRG-API-Version {0}'}" Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- En producción, lo único que el administrador necesita saber de la conexión:
+                     que la maneja HiPOS y que no hay nada que tocar acá. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding IsProduction}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="CONEXIÓN OGLOBA" Style="{StaticResource FieldLabel}" />
+                        <Label Text="La conexión se configura automáticamente desde HiPOS. No hay nada que ajustar aquí."
+                               Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button Text="Autocompletar datos de sandbox (pruebas)"
+                        Style="{StaticResource SecondaryButton}"
+                        IsVisible="{Binding CanAutofillSandbox}"
+                        Command="{Binding FillSandboxCommand}" />
+
+                <!-- Estado en línea, no notificación: el cajero está mirando el formulario y un
+                     aviso que se desvanece se pierde justo cuando dice por qué no se guardó. -->
+                <Border IsVisible="{Binding HasStatusMessage}"
+                        BackgroundColor="{StaticResource InfoTint}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="14,12">
+                    <Label Text="{Binding StatusMessage}"
+                           FontSize="13"
+                           TextColor="{StaticResource Info}" />
+                </Border>
+
+                <!-- Solo continúa cuando ya hay cajeros: es el último paso del alta. -->
+                <Button Text="Guardar y continuar" Style="{StaticResource PrimaryButton}"
+                        HeightRequest="56"
+                        Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Color="{StaticResource Primary}" />
+            </VerticalStackLayout>
+
+            </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

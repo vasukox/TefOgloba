@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.Admin.AdminLogExportPage"
+             xmlns:vm="clr-namespace:Permoda.Pay.Maui.ViewModels"
+             Title="Exportación UAT"
+             BackgroundColor="{StaticResource Background}">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20,24,20,28">
+
+        <Label Grid.Row="0"
+               Text="Exportar bitácora UAT"
+               FontSize="34"
+               FontAttributes="Bold"
+               TextColor="{StaticResource TextPrimary}" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="16">
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Style="{StaticResource FieldLabel}"
+                               Text="Estado" />
+                        <Label Text="{Binding StatusMessage}"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="{Binding EntriesCountLabel}"
+                               TextColor="{StaticResource TextSecondary}" />
+                        <HorizontalStackLayout Spacing="12">
+                            <Button Text="Exportar"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Command="{Binding ExportCommand}" />
+                            <Button Text="Vaciar"
+                                    Style="{StaticResource BorderlessButton}"
+                                    Command="{Binding ClearCommand}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="JSON exportado"
+                       Style="{StaticResource FieldLabel}" />
+                <Border Style="{StaticResource FieldCard}">
+                    <Editor Text="{Binding ExportedJson}"
+                            IsReadOnly="True"
+                            AutoSize="TextChanges"
+                            FontFamily="Courier New"
+                            FontSize="13"
+                            HeightRequest="320" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Label Grid.Row="2"
+               Text="HiOSTORE · Permoda · Ogloba GiftCard"
+               HorizontalOptions="Center"
+               TextColor="{StaticResource TextMuted}"
+               FontSize="11" />
+    </Grid>
+</ContentPage>

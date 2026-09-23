@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tema de arranque del módulo.
+
+    Sin esto, abrir el TEF mostraba dos ventanas en blanco encadenadas y una barra con el
+    nombre de la app antes de llegar a la pantalla real: la de la Activity que recibe el
+    intent de HiPOS y la de MAUI mientras carga su runtime. El cajero veía pantallas ajenas
+    en medio de un cobro.
+
+    Se corrige por el lado del tema y no con código porque esas ventanas las dibuja Android
+    ANTES de que corra una sola línea nuestra: el único momento en que se puede intervenir es
+    declarando cómo se ven.
+-->
+<resources>
+
+    <style name="Ogloba.Launch" parent="Maui.SplashTheme">
+        <!-- Nada de barra de título: era la que mostraba el nombre del módulo encima de la
+             ventana en blanco. -->
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <!-- Mata la "starting window" que Android dibuja ANTES de que arranque el proceso.
+             Verificado en logcat (2026-08-26): `Window{... Splash Screen com.permoda.tefogloba}`
+             — esa era la pantalla en blanco con el nombre encima. No la dibuja MAUI ni
+             nosotros: la pone el sistema, y la única forma de quitarla es esta. -->
+        <item name="android:windowDisablePreview">true</item>
+
+        <!-- El fondo del arranque es el mismo de la app, no blanco. Así la transición a la
+             pantalla del módulo no se ve como un flash. -->
+        <item name="android:windowBackground">@color/oglobaBackground</item>
+        <item name="android:colorBackground">@color/oglobaBackground</item>
+
+        <!-- Barra de estado a juego, con íconos oscuros: el fondo es claro. -->
+        <item name="android:statusBarColor">@color/oglobaBackground</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- La Activity que recibe los intents de HiPOS no es una pantalla: recibe, levanta la app
+         y espera para responder. Translúcida y sin barra, no se ve nada de ella. -->
+    <style name="Ogloba.Invisible" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+
+        <!-- Igual que arriba: sin ventana de arranque del sistema. Esta Activity es la que
+             invoca HiPOS, así que es la primera que se ve — o mejor dicho, la que no se debe
+             ver. -->
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
+</resources>

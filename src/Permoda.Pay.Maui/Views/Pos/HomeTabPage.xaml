@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             x:Class="Permoda.Pay.Maui.Views.Pos.HomeTabPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Inicio">
+
+    <!-- El menú tiene DOS destinos y nada más. Redimir no está: se cobra desde el POS, que es
+         quien sabe por cuánto es la factura; llegar a Redimir a mano invitaría a descontarle
+         saldo a un bono sin una venta detrás.
+
+         Tampoco está "Tu actividad": lo mismo se ve completo en Bitácora, y repetirlo acá le
+         quitaba a las dos acciones el espacio que necesitan para leerse de un vistazo. -->
+    <Grid RowDefinitions="Auto,*">
+
+        <controls:TopBarView Grid.Row="0" SectionText="Inicio" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="24,18,24,20" Spacing="18" MaximumWidthRequest="1400">
+
+                <!-- Saludo + refrescar -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{Binding Greeting, FallbackValue='Hola'}" />
+                                    <Span Text=" 👋" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Label Text="{Binding ShiftSummary}"
+                               FontSize="13"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+
+                    <Border Grid.Column="1"
+                            WidthRequest="40" HeightRequest="40"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 20"
+                            VerticalOptions="Start">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Header.CheckConnectivityCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="⟳"
+                               FontSize="18"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <!-- Las dos acciones, lado a lado y del mismo tamaño. Iguales a propósito: ninguna
+                     es "la principal", el cajero llega sabiendo cuál necesita y lo que importa es
+                     que ambas sean un blanco grande y fácil de acertar con el pulgar. -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="18" MinimumHeightRequest="300">
+
+                    <Border Grid.Column="0"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 24"
+                            Padding="28,32">
+                        <Border.Shadow>
+                            <Shadow Brush="{StaticResource ShadowBrush}" Opacity="0.12" Radius="18" Offset="0,6" />
+                        </Border.Shadow>
+                        <!-- Entra con movimiento y se hunde al tocar: el cajero necesita saber
+                             que su toque se registró antes de que llegue la pantalla siguiente. -->
+                        <Border.Behaviors>
+                            <behaviors:EntranceBehavior />
+                            <behaviors:PressableBehavior />
+                        </Border.Behaviors>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectModuleCommand}" CommandParameter="activate" />
+                        </Border.GestureRecognizers>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding SelectedModule}" Value="activate">
+                                <Setter Property="Background" Value="{StaticResource HeroBrush}" />
+                                <Setter Property="Stroke" Value="Transparent" />
+                            </DataTrigger>
+                        </Border.Triggers>
+
+                        <VerticalStackLayout Spacing="16" VerticalOptions="Center">
+                            <Border WidthRequest="72" HeightRequest="72"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    HorizontalOptions="Start">
+                                <Image Source="ic_sparkles.png"
+                                       WidthRequest="34" HeightRequest="34"
+                                       Aspect="AspectFit"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Label Text="Activar bono"
+                                   FontSize="30"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextPrimary}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedModule}" Value="activate">
+                                        <Setter Property="TextColor" Value="{StaticResource OnHero}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+
+                            <Label Text="Ya cobraste el bono en el POS. Aquí lo activas para que quede con saldo."
+                                   FontSize="14"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{StaticResource TextSecondary}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedModule}" Value="activate">
+                                        <Setter Property="TextColor" Value="{StaticResource OnHeroMuted}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+
+                            <Label Text="Entrar  →"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   Margin="0,6,0,0">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedModule}" Value="activate">
+                                        <Setter Property="TextColor" Value="{StaticResource Lime}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 24"
+                            Padding="28,32">
+                        <Border.Shadow>
+                            <Shadow Brush="{StaticResource ShadowBrush}" Opacity="0.12" Radius="18" Offset="0,6" />
+                        </Border.Shadow>
+                        <Border.Behaviors>
+                            <behaviors:EntranceBehavior DelayMs="90" />
+                            <behaviors:PressableBehavior />
+                        </Border.Behaviors>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectModuleCommand}" CommandParameter="balance" />
+                        </Border.GestureRecognizers>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding SelectedModule}" Value="balance">
+                                <Setter Property="Background" Value="{StaticResource HeroBrush}" />
+                                <Setter Property="Stroke" Value="Transparent" />
+                            </DataTrigger>
+                        </Border.Triggers>
+
+                        <VerticalStackLayout Spacing="16" VerticalOptions="Center">
+                            <Border WidthRequest="72" HeightRequest="72"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    HorizontalOptions="Start">
+                                <Image Source="ic_search.png"
+                                       WidthRequest="34" HeightRequest="34"
+                                       Aspect="AspectFit"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Label Text="Consultar saldo"
+                                   FontSize="30"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource TextPrimary}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedModule}" Value="balance">
+                                        <Setter Property="TextColor" Value="{StaticResource OnHero}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+
+                            <Label Text="Verifica el saldo y el vencimiento de un bono sin modificarlo."
+                                   FontSize="14"
+                                   LineBreakMode="WordWrap"
+                                   TextColor="{StaticResource TextSecondary}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedModule}" Value="balance">
+                                        <Setter Property="TextColor" Value="{StaticResource OnHeroMuted}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+
+                            <Label Text="Entrar  →"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   Margin="0,6,0,0">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedModule}" Value="balance">
+                                        <Setter Property="TextColor" Value="{StaticResource Lime}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

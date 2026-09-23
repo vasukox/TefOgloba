@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.Setup.CashierSetupPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             Title="Cajeros">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Border Grid.Row="0"
+                Background="{StaticResource HeroBrush}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle"
+                Padding="28,26">
+            <VerticalStackLayout Spacing="6">
+                <Label Text="PASO 3 · CAJEROS" Style="{StaticResource HeroLabel}" />
+                <Label Text="Registra los cajeros"
+                       FontSize="28"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource OnHero}" />
+                <Label Text="Cada cajero entra con su propia contraseña. Sin al menos uno, la caja no puede operar."
+                       FontSize="14"
+                       TextColor="{StaticResource OnHeroMuted}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="28,24,28,16" Spacing="14" MaximumWidthRequest="1180">
+
+                <!-- Falta el paso anterior. Se dice y se ofrece el camino, sin dejar la
+                     pantalla muda ni aceptar datos que no se van a poder guardar. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding NeedsStore}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Falta configurar la tienda"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Los cajeros se guardan por tienda, así que primero hay que completar la identidad de la caja."
+                               Style="{StaticResource Caption}" />
+                        <Button Text="Ir a Configuración"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="54"
+                                Command="{Binding GoToStoreSetupCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource Card}" IsVisible="{Binding CanRegister}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="NUEVO CAJERO" Style="{StaticResource FieldLabel}" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Border Grid.Column="0" Style="{StaticResource InputField}">
+                                <Entry Placeholder="Nombre o código"
+                                       FontSize="17"
+                                       Text="{Binding NewCashierId, Mode=TwoWay}" />
+                            </Border>
+                            <Border Grid.Column="1" Style="{StaticResource InputField}">
+                                <Entry Placeholder="Contraseña"
+                                       IsPassword="True"
+                                       FontSize="17"
+                                       Text="{Binding NewCashierPassword, Mode=TwoWay}"
+                                       ReturnCommand="{Binding AddCommand}" />
+                            </Border>
+                        </Grid>
+
+                        <Button Text="Agregar cajero"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="54"
+                                Command="{Binding AddCommand}" />
+
+                        <Label Text="{Binding Message}"
+                               FontSize="13"
+                               TextColor="{StaticResource TextSecondary}"
+                               IsVisible="{Binding HasMessage}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="REGISTRADOS" Style="{StaticResource FieldLabel}" IsVisible="{Binding HasCashiers}" />
+
+                <CollectionView ItemsSource="{Binding Cashiers}"
+                                SelectionMode="None"
+                                IsVisible="{Binding HasCashiers}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border BackgroundColor="{StaticResource Surface}"
+                                    Stroke="{StaticResource BorderBrush}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 14"
+                                    Padding="16,12"
+                                    Margin="0,0,0,8">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding .}"
+                                           FontSize="17"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           VerticalOptions="Center" />
+                                    <Label Grid.Column="1"
+                                           Text="Eliminar"
+                                           FontSize="13"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Error}"
+                                           VerticalOptions="Center">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={x:Reference Root}, Path=BindingContext.RemoveCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Label Text="Todavía no hay cajeros registrados."
+                       FontSize="14"
+                       TextColor="{StaticResource TextMuted}"
+                       IsVisible="{Binding IsEmpty}" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Replicar NO va acá. Estuvo un momento y estaba fuera de lugar: esta pantalla es el
+             alta de personas, y lo que se replica es la identidad de la caja —tienda, llave,
+             PIN—. Vive en Configuración, que es donde están esas cosas. -->
+        <Button Grid.Row="2"
+                Text="Continuar"
+                Style="{StaticResource PrimaryButton}"
+                HeightRequest="58"
+                Margin="28,8,28,24"
+                IsEnabled="{Binding CanContinue}"
+                Command="{Binding ContinueCommand}" />
+    </Grid>
+</ContentPage>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Estos tres nombres los referencia el tema Android que trae el SDK de MAUI
+         (Maui.MainTheme/Maui.SplashTheme); sin este archivo cae al morado por defecto
+         de la plantilla (#512BD4). Valores calcados de Primary/PrimaryDark/Accent en
+         Resources/Styles/Colors.xaml — no hay forma de compartir el recurso entre los
+         dos sistemas (XAML vs. Android nativo), así que si la paleta cambia hay que
+         actualizar ambos archivos. -->
+    <color name="colorPrimary">#4554A1</color>
+    <color name="colorPrimaryDark">#333F7A</color>
+    <color name="colorAccent">#3A63B8</color>
+
+    <!-- Fondo del arranque: el mismo Background del design system. Que la ventana previa a
+         MAUI sea de este color y no blanca es lo que evita el flash al abrir el módulo. -->
+    <color name="oglobaBackground">#F2F2F2</color>
+</resources>

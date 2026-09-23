@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.Setup.ReplicationJoinPage"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Copiar configuración">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Border Grid.Row="0"
+                Background="{StaticResource HeroBrush}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle"
+                Padding="28,26">
+            <VerticalStackLayout Spacing="6">
+                <Label Text="COPIAR DE OTRA CAJA" Style="{StaticResource HeroLabel}" />
+                <Label Text="Configurar esta caja"
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource OnHero}" />
+                <Label Text="En una caja ya configurada de esta tienda: Registrar cajeros → Replicar a otra caja."
+                       FontSize="14"
+                       TextColor="{StaticResource OnHeroMuted}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="28,24" Spacing="16"
+                                 MaximumWidthRequest="640"
+                                 HorizontalOptions="Center">
+
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label Text="CÓDIGO DE LA OTRA CAJA" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource InputField}">
+                            <Entry Placeholder="000000"
+                                   Keyboard="Numeric"
+                                   MaxLength="6"
+                                   FontSize="30"
+                                   CharacterSpacing="8"
+                                   HorizontalTextAlignment="Center"
+                                   Text="{Binding Code, Mode=TwoWay}"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                        </Border>
+
+                        <!-- Vacío = la busca sola por la red. Se escribe solo si la difusión está
+                             bloqueada, que es un caso real: que dos cajas se respondan el ping no
+                             dice nada sobre si el switch deja pasar broadcast. -->
+                        <Label Text="DIRECCIÓN (SOLO SI NO LA ENCUENTRA SOLA)" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource InputField}">
+                            <Entry Placeholder="Se busca automáticamente"
+                                   Keyboard="Numeric"
+                                   FontSize="17"
+                                   Text="{Binding HostAddress, Mode=TwoWay}"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                        </Border>
+
+                        <Button Text="Traer configuración"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="56"
+                                Command="{Binding FetchCommand}"
+                                IsEnabled="{Binding CanFetch}" />
+
+                        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                           IsVisible="{Binding IsBusy}"
+                                           Color="{StaticResource Primary}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="{Binding Message}"
+                       FontSize="14"
+                       LineBreakMode="WordWrap"
+                       TextColor="{StaticResource Error}"
+                       IsVisible="{Binding HasMessage}" />
+
+                <!-- Paso 2: se confirma ANTES de guardar. En un centro comercial puede haber otra
+                     KOAJ en la misma red, y guardar sin mirar deja esta caja operando contra la
+                     tienda equivocada — un error que nadie nota hasta que no cuadra la plata. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasPreview}">
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label Text="SE VA A CONFIGURAR COMO" Style="{StaticResource FieldLabel}" />
+                        <Label Text="{Binding PreviewStore}"
+                               FontSize="21"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="{Binding PreviewCashiers}" Style="{StaticResource Caption}" />
+
+                        <Label Text="NOMBRE DE ESTA CAJA" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource InputField}">
+                            <Entry Placeholder="CAJA-02"
+                                   FontSize="19"
+                                   IsSpellCheckEnabled="False"
+                                   IsTextPredictionEnabled="False"
+                                   Text="{Binding TerminalId, Mode=TwoWay}"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                        </Border>
+
+                        <!-- El aviso va acá, pegado al campo, y no en un texto de ayuda al pie:
+                             este es EL dato que no se copia y el único que el operador tiene que
+                             cambiar. Equivocarlo no da error —la caja queda operando— y se
+                             descubre semanas después, cuando dos cajas aparecen como la misma en
+                             la bitácora de Ogloba y no hay forma de saber cuál cobró qué. -->
+                        <Border BackgroundColor="{StaticResource Accent}" Padding="14,10"
+                                StrokeThickness="0" StrokeShape="RoundRectangle 10">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="⚠ CAMBIA EL NOMBRE SI NO CORRESPONDE"
+                                       FontSize="13" FontAttributes="Bold"
+                                       TextColor="{StaticResource OnDark}" />
+                                <Label Text="Es lo ÚNICO que no se copia y lo único distinto entre cajas. Dos cajas con el mismo nombre firman igual sus cobros y la bitácora deja de decir dónde se hizo cada venta."
+                                       FontSize="13" LineBreakMode="WordWrap"
+                                       TextColor="{StaticResource OnDark}" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Button Text="Guardar y continuar"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="56"
+                                Command="{Binding ConfirmCommand}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

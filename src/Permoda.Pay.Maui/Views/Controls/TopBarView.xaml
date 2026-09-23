@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:shell="clr-namespace:Permoda.Pay.Maui"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             x:Class="Permoda.Pay.Maui.Views.Controls.TopBarView"
+             x:Name="Root">
+
+    <!-- Barra superior común a las pantallas operativas: volver, marca, migaja de pan y chip
+         de usuario. El chip se resuelve contra el BindingContext de la página (todos los
+         ViewModels exponen `Header`), y la migaja llega por ParentText / SectionText.
+         Sin campana de notificaciones. -->
+    <Border BackgroundColor="{StaticResource Surface}"
+            Stroke="{StaticResource BorderBrush}"
+            StrokeThickness="0,0,0,1"
+            StrokeShape="Rectangle"
+            Padding="14,8">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto" ColumnSpacing="10">
+
+            <!-- Menú lateral. Las pantallas ocultan la barra del Shell, así que este botón es
+                 el único acceso al menú además del gesto de borde. 48dp: mínimo táctil Material. -->
+            <Border Grid.Column="0"
+                    WidthRequest="48" HeightRequest="48"
+                    BackgroundColor="{StaticResource SurfaceAlt}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 24"
+                    VerticalOptions="Center"
+                    IsVisible="{Binding ShowMenu, Source={x:Reference Root}}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{x:Static shell:AppShell.OpenMenuCommand}" />
+                </Border.GestureRecognizers>
+                <Image Source="ic_menu.png"
+                       WidthRequest="22" HeightRequest="22"
+                       Aspect="AspectFit"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- Volver al dashboard. Solo en pantallas de módulo (las que tienen migaja). -->
+            <Border Grid.Column="1"
+                    WidthRequest="48" HeightRequest="48"
+                    BackgroundColor="{StaticResource PrimaryTint}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 24"
+                    VerticalOptions="Center"
+                    IsVisible="{Binding ShowBack, Source={x:Reference Root}}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{x:Static shell:AppShell.BackHomeCommand}" />
+                </Border.GestureRecognizers>
+                <Image Source="ic_arrow_left.png"
+                       WidthRequest="20" HeightRequest="20"
+                       Aspect="AspectFit"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- El distintivo de marca, y el único lugar de la barra donde aparece el lima.
+                 Acá funciona: lima con texto #333333 da 11:1 de contraste, mucho más que el
+                 mínimo accesible. Es un acento puntual, no un color de interfaz — repartirlo
+                 por la pantalla lo volvería ruido y lo dejaría ilegible sobre blanco. -->
+            <Border Grid.Column="2"
+                    WidthRequest="36" HeightRequest="36"
+                    BackgroundColor="{StaticResource Lime}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 10"
+                    VerticalOptions="Center">
+                <Label Text="O"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource OnLime}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <VerticalStackLayout Grid.Column="3" Spacing="0" VerticalOptions="Center">
+                <Label Text="OGLOBA TEF"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}" />
+                <Label Text="TERMINAL DE BONOS"
+                       Style="{StaticResource FieldLabel}"
+                       FontSize="8" />
+            </VerticalStackLayout>
+
+            <HorizontalStackLayout Grid.Column="4" Spacing="8" VerticalOptions="Center" Margin="8,0,0,0">
+                <Label Text="{Binding ParentText, Source={x:Reference Root}}"
+                       IsVisible="{Binding HasParent, Source={x:Reference Root}}"
+                       FontSize="12"
+                       TextColor="{StaticResource TextSecondary}"
+                       VerticalOptions="Center" />
+                <!-- El separador solo tiene sentido si hay algo a su izquierda: en Inicio
+                     quedaba un "› Inicio" suelto. -->
+                <Label Text="›"
+                       IsVisible="{Binding HasParent, Source={x:Reference Root}}"
+                       FontSize="14"
+                       TextColor="{StaticResource TextMuted}"
+                       VerticalOptions="Center" />
+                <Label Text="{Binding SectionText, Source={x:Reference Root}}"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <!-- Salida única del modo HiPOS: es lo que le contesta al POS. Va ANTES del chip, no
+                 en su lugar: quién está operando tiene que verse siempre, también a mitad de un
+                 cobro, porque la operación queda firmada con ese nombre. -->
+            <Border Grid.Column="5"
+                    BackgroundColor="{StaticResource PrimaryTint}"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 22"
+                    Padding="18,10"
+                    VerticalOptions="Center"
+                    IsVisible="{Binding ShowBackToHiPos, Source={x:Reference Root}}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{x:Static controls:TopBarView.BackToHiPosCommand}" />
+                </Border.GestureRecognizers>
+                <Label Text="Volver a HiPOS"
+                       FontSize="13"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource Primary}"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- Quién está operando. SIEMPRE visible: la operación se firma con este nombre, en
+                 la bitácora y en lo que se le manda a Ogloba, y en una caja compartida el cajero
+                 tiene que poder verificar de un vistazo que es él.
+                 En modo HiPOS queda como dato y no como botón (InputTransparent): cambiar de
+                 cajero a mitad de un cobro no es una acción válida. -->
+            <Border Grid.Column="6"
+                    BackgroundColor="{StaticResource Surface}"
+                    Stroke="{StaticResource BorderBrush}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 22"
+                    Padding="5,4,12,4"
+                    VerticalOptions="Center"
+                    InputTransparent="{Binding IsHiPosMode, Source={x:Reference Root}}">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding Header.ChangeCashierCommand}" />
+                </Border.GestureRecognizers>
+                <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8">
+                    <Border Grid.Column="0"
+                            WidthRequest="32" HeightRequest="32"
+                            Background="{StaticResource HeroBrush}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 16"
+                            VerticalOptions="Center">
+                        <Label Text="{Binding Header.Initials}"
+                               FontSize="11"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource OnDark}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                        <!-- En un cobro de HiPOS esto muestra la CAJA, no el cajero: en ese flujo
+                             el turno del módulo no existe y el nombre no significaba nada ahí.
+                             Ver PosHeaderViewModel.ChipTitle. -->
+                        <Label Text="{Binding Header.ChipTitle}"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <HorizontalStackLayout Spacing="4">
+                            <Label Text="●" FontSize="8" VerticalOptions="Center">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="online">
+                                        <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="offline">
+                                        <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="checking">
+                                        <Setter Property="TextColor" Value="{StaticResource Accent}" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Label Text="{Binding Header.ChipSubtitle}"
+                                   FontSize="10"
+                                   TextColor="{StaticResource TextSecondary}"
+                                   VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</ContentView>

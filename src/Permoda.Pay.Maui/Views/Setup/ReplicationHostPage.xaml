@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.Setup.ReplicationHostPage"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Replicar configuración">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Border Grid.Row="0"
+                Background="{StaticResource HeroBrush}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle"
+                Padding="28,26">
+            <VerticalStackLayout Spacing="6">
+                <Label Text="REPLICAR A OTRA CAJA" Style="{StaticResource HeroLabel}" />
+                <Label Text="Código de emparejamiento"
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource OnHero}" />
+                <Label Text="Escríbelo en la otra caja, en Configuración → Copiar de otra caja."
+                       FontSize="14"
+                       TextColor="{StaticResource OnHeroMuted}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="28,24" Spacing="16"
+                                 MaximumWidthRequest="640"
+                                 HorizontalOptions="Center">
+
+                <!-- El código, enorme. Se lee desde la otra caja, a un metro o dos, con el
+                     mostrador de por medio: acá el tamaño no es estética, es que se pueda leer
+                     sin volver a caminar. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasCode}">
+                    <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="{Binding CodeDisplay}"
+                               FontSize="58"
+                               FontAttributes="Bold"
+                               CharacterSpacing="6"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{StaticResource TextPrimary}" />
+
+                        <Label Text="{Binding TimeRemaining, StringFormat='Se cierra en {0}'}"
+                               FontSize="15"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{StaticResource TextSecondary}" />
+
+                        <Label Text="{Binding Transfers}"
+                               FontSize="14"
+                               HorizontalTextAlignment="Center"
+                               TextColor="{StaticResource TextMuted}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- La IP se muestra SIEMPRE, no solo cuando algo falla. El descubrimiento
+                     automático va por difusión UDP, y la difusión puede estar bloqueada en la red
+                     de una tienda aunque las cajas se vean entre sí. Tenerla a la vista convierte
+                     un callejón sin salida en un dato que se teclea. -->
+                <Border Style="{StaticResource Card}" IsVisible="{Binding HasAddress}">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="SI LA OTRA CAJA NO LA ENCUENTRA" Style="{StaticResource FieldLabel}" />
+                        <Label Text="{Binding LocalAddress}"
+                               FontSize="22"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Escribe esta dirección en la otra caja."
+                               Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="{Binding Message}"
+                       FontSize="14"
+                       LineBreakMode="WordWrap"
+                       TextColor="{StaticResource Error}"
+                       IsVisible="{Binding HasMessage}" />
+
+                <Button Text="Generar un código nuevo"
+                        Style="{StaticResource SecondaryButton}"
+                        HeightRequest="54"
+                        Command="{Binding RegenerateCommand}" />
+
+                <Border Style="{StaticResource Card}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="QUÉ SE COPIA" Style="{StaticResource FieldLabel}" />
+                        <Label Text="Tienda, llave, dirección del servicio, los cajeros con sus contraseñas y el PIN de administrador."
+                               Style="{StaticResource Caption}" />
+                        <Label Text="El nombre de la caja NO se copia: cada una conserva el suyo, y la otra caja elige el que sigue."
+                               Style="{StaticResource Caption}" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

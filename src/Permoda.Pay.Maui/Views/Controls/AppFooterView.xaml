@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Permoda.Pay.Maui.Views.Controls.AppFooterView"
+             x:Name="Root">
+
+    <!-- Pie común: acceso a configuración, identificación de la terminal y estado de sync.
+         Las columnas laterales van en Auto y la del centro flexible: con `*,Auto,*` el texto
+         de los extremos se recortaba ("Sincroni…"). -->
+    <Border BackgroundColor="{StaticResource Surface}"
+            Stroke="{StaticResource BorderBrush}"
+            StrokeThickness="0,1,0,0"
+            StrokeShape="Rectangle"
+            Padding="18,8">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+            <HorizontalStackLayout Grid.Column="0" Spacing="7" VerticalOptions="Center">
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding SetupCommand, Source={x:Reference Root}}" />
+                </HorizontalStackLayout.GestureRecognizers>
+                <Image Source="ic_cog.png"
+                       WidthRequest="15" HeightRequest="15"
+                       Aspect="AspectFit"
+                       VerticalOptions="Center" />
+                <Label Text="Configuración de la terminal"
+                       FontSize="12"
+                       TextColor="{StaticResource TextSecondary}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <Label Grid.Column="1"
+                   Text="{Binding Header.TerminalFooter}"
+                   FontSize="11"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource TextMuted}"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   LineBreakMode="TailTruncation" />
+
+            <HorizontalStackLayout Grid.Column="2" Spacing="5" VerticalOptions="Center">
+                <Label Text="●" FontSize="9" VerticalOptions="Center">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="online">
+                            <Setter Property="TextColor" Value="{StaticResource Success}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="offline">
+                            <Setter Property="TextColor" Value="{StaticResource Error}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="checking">
+                            <Setter Property="TextColor" Value="{StaticResource Accent}" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+                <Label Text="{Binding Header.SyncText}"
+                       FontSize="11"
+                       TextColor="{StaticResource TextMuted}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </Grid>
+    </Border>
+</ContentView>

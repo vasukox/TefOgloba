@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             xmlns:shell="clr-namespace:Permoda.Pay.Maui"
+             x:Class="Permoda.Pay.Maui.Views.Pos.BalanceTabPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Saldo">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <controls:TopBarView Grid.Row="0" ParentText="Inicio" SectionText="Consultar saldo" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20,10,20,12" Spacing="18" MaximumWidthRequest="1180">
+
+                <!-- Encabezado de la operación + estado de Ogloba -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Grid.Column="0" Spacing="6">
+                        <Label Text="CONSULTA"
+                               Style="{StaticResource FieldLabel}"
+                               TextColor="{StaticResource Primary}" />
+                        <Label Text="Consultar saldo"
+                               FontSize="26"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Escanea o digita el serial del bono para ver su saldo, estado y vencimiento."
+                               FontSize="12"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="End">
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Header.CheckConnectivityCommand}" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                        <Label Text="●" FontSize="10" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="online">
+                                    <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="offline">
+                                    <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="checking">
+                                    <Setter Property="TextColor" Value="{StaticResource Accent}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding Header.ShortStatusText}"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="online">
+                                    <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="offline">
+                                    <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="checking">
+                                    <Setter Property="TextColor" Value="{StaticResource Accent}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Grid>
+
+                <!-- Campo del serial, a lo ancho: icono, entrada y botón de escaneo -->
+                <VerticalStackLayout Spacing="8" Margin="0,8,0,0">
+                    <Label Text="SERIAL DEL BONO" Style="{StaticResource FieldLabel}" />
+
+                    <Border BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource PrimaryBrush}"
+                            StrokeThickness="2"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="12,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0"
+                                    WidthRequest="44" HeightRequest="44"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    VerticalOptions="Center">
+                                <Image Source="ic_card.png"
+                                       WidthRequest="22" HeightRequest="22"
+                                       Aspect="AspectFit"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Entry x:Name="CardEntry"
+                                   Grid.Column="1"
+                                   Placeholder="BN-2024-XXXXX"
+                                   FontSize="19"
+                                   CharacterSpacing="2"
+                                   Keyboard="Plain"
+                                   BackgroundColor="Transparent"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   Text="{Binding CardNumber, Mode=TwoWay}"
+                                   Completed="OnCardCompleted"
+                                   VerticalOptions="Center"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                                <Entry.Behaviors>
+                                    <!-- El siguiente escaneo pisa al anterior: sin esto el serial
+                                         nuevo se pegaba detrás del ya consultado. -->
+                                    <behaviors:ScanReplaceBehavior />
+                                </Entry.Behaviors>
+                            </Entry>
+
+                            <!-- Distintivo, NO botón: el campo ya queda con el cursor al abrir la
+                                 pantalla, así que el lector dispara solo. Tenerlo como botón
+                                 sugería un paso que no hay que dar. Se deja a la vista para que
+                                 el cajero sepa que puede escanear en vez de digitar. -->
+                            <Border Grid.Column="2"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    Padding="12,6"
+                                    VerticalOptions="Center"
+                                    InputTransparent="True">
+                                <HorizontalStackLayout Spacing="7">
+                                    <Image Source="ic_search.png"
+                                           WidthRequest="17" HeightRequest="17"
+                                           Aspect="AspectFit"
+                                           VerticalOptions="Center" />
+                                    <Label Text="Escanear"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Primary}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Label Text="Acepta códigos de barras, QR o 16 dígitos."
+                           FontSize="12"
+                           TextColor="{StaticResource TextMuted}" />
+                </VerticalStackLayout>
+
+                <!-- Volver al menú + CTA. El botón de volver es explícito y no solo la flecha de
+                     la barra: el cajero termina la consulta acá abajo, que es donde tiene la
+                     vista y la mano. -->
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,16,0,0">
+                    <Button Grid.Column="0"
+                            Text="←  Volver al menú"
+                            Style="{StaticResource SecondaryButton}"
+                            MinimumWidthRequest="210"
+                            Command="{x:Static shell:AppShell.BackHomeCommand}" />
+
+                    <Button Grid.Column="2"
+                            Text="Consultar saldo  →"
+                            Style="{StaticResource PrimaryButton}"
+                            FontSize="15"
+                            HeightRequest="52"
+                            MinimumWidthRequest="250"
+                            Padding="36,0"
+                            Command="{Binding CheckBalanceCommand}"
+                            IsEnabled="{Binding CanCheck}" />
+                </Grid>
+
+                <!-- Resultado de la consulta. Entra con una animación que se repite en cada
+                     consulta (el VM limpia el saldo al empezar, así que el bloque se oculta y
+                     vuelve): sin eso, dos bonos con el mismo saldo se ven idénticos y el cajero
+                     no sabe si la pantalla se actualizó. -->
+                <Border BackgroundColor="{StaticResource Surface}"
+                        Stroke="{StaticResource BorderBrush}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 20"
+                        Padding="0"
+                        Margin="0,8,0,0"
+                        IsVisible="{Binding HasResult}">
+                    <Border.Behaviors>
+                        <behaviors:RevealBehavior />
+                    </Border.Behaviors>
+                    <Border.Shadow>
+                        <Shadow Brush="{StaticResource ShadowBrush}" Opacity="0.14" Radius="20" Offset="0,7" />
+                    </Border.Shadow>
+
+                    <Grid RowDefinitions="Auto,Auto">
+
+                        <!-- Cifra: es lo único que el cajero mira, así que ocupa la línea entera -->
+                        <VerticalStackLayout Grid.Row="0" Padding="20,18,20,16" Spacing="4">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Grid.Column="0"
+                                       Text="{Binding ResultHeadline}"
+                                       Style="{StaticResource FieldLabel}"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       VerticalOptions="Center" />
+
+                                <Border Grid.Column="1"
+                                        BackgroundColor="{StaticResource ErrorTint}"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 20"
+                                        Padding="12,5"
+                                        VerticalOptions="Center">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsCardUsable}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource SuccessTint}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="{Binding StatusChipText}"
+                                           FontSize="10"
+                                           FontAttributes="Bold"
+                                           CharacterSpacing="1"
+                                           TextColor="{StaticResource Error}">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding IsCardUsable}" Value="True">
+                                                <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+                            </Grid>
+
+                            <Label Text="{Binding ResultAmountText}"
+                                   FontSize="42"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   IsVisible="{Binding IsSuccessfulLookup}">
+                                <Label.Behaviors>
+                                    <behaviors:RevealBehavior DelayMs="90" />
+                                </Label.Behaviors>
+                            </Label>
+                        </VerticalStackLayout>
+
+                        <!-- Pie: serial consultado y vencimiento, sobre fondo tenue -->
+                        <Border Grid.Row="1"
+                                BackgroundColor="{StaticResource SurfaceAlt}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 0,0,20,20"
+                                Padding="20,12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Grid.Column="0"
+                                       Text="{Binding LookedUpCardText}"
+                                       FontSize="12"
+                                       CharacterSpacing="1"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       LineBreakMode="TailTruncation"
+                                       VerticalOptions="Center"
+                                       IsVisible="{Binding IsSuccessfulLookup}" />
+
+                                <Label Grid.Column="1"
+                                       Text="{Binding ExpiryText}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextMuted}"
+                                       VerticalOptions="Center"
+                                       IsVisible="{Binding IsSuccessfulLookup}" />
+
+                                <!-- Cuando falla, el motivo ocupa todo el pie: es la única
+                                     información útil que quedó de la consulta. -->
+                                <Label Grid.Column="0" Grid.ColumnSpan="2"
+                                       Text="{Binding ResultDetail}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource Error}"
+                                       IsVisible="{Binding IsSuccessfulLookup, Converter={StaticResource InverseBool}}" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   Color="{StaticResource Primary}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

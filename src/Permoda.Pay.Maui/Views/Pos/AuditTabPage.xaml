@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             xmlns:shell="clr-namespace:Permoda.Pay.Maui"
+             x:Class="Permoda.Pay.Maui.Views.Pos.AuditTabPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Bitácora">
+
+    <!-- La bitácora es una pantalla de LECTURA: se abre para responder "¿qué pasó con esa venta?".
+         Por eso cada fila prioriza operación, hora y cajero —lo que se busca— y deja el detalle
+         técnico debajo. Antes las cuatro líneas tenían el mismo peso y había que leerlas enteras
+         para encontrar una. -->
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <controls:TopBarView Grid.Row="0" ParentText="Inicio" SectionText="Bitácora" />
+
+        <VerticalStackLayout Grid.Row="1" Padding="24,16,24,10" Spacing="4">
+            <Label Text="REGISTRO DE OPERACIONES"
+                   Style="{StaticResource FieldLabel}"
+                   TextColor="{StaticResource Primary}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <Label Grid.Column="0"
+                       Text="Bitácora de la caja"
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}" />
+                <Label Grid.Column="1"
+                       Text="{Binding StatusMessage}"
+                       FontSize="13"
+                       TextColor="{StaticResource TextSecondary}"
+                       VerticalOptions="End" />
+            </Grid>
+        </VerticalStackLayout>
+
+        <Border Grid.Row="2"
+                Margin="24,0,24,0"
+                BackgroundColor="{StaticResource Surface}"
+                Stroke="{StaticResource BorderBrush}"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 20"
+                Padding="6,4">
+            <CollectionView ItemsSource="{Binding Entries}">
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Spacing="10" Padding="0,52" VerticalOptions="Center">
+                        <Border WidthRequest="56" HeightRequest="56"
+                                BackgroundColor="{StaticResource PrimaryTint}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 28"
+                                HorizontalOptions="Center">
+                            <Image Source="ic_list.png"
+                                   WidthRequest="24" HeightRequest="24"
+                                   Aspect="AspectFit"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
+                        <Label Text="Sin operaciones registradas"
+                               FontSize="15"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Cuando actives, redimas o consultes un bono, quedará registrado aquí."
+                               FontSize="13"
+                               HorizontalTextAlignment="Center"
+                               MaximumWidthRequest="440"
+                               HorizontalOptions="Center"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Stroke="{StaticResource BorderBrush}"
+                                StrokeThickness="0,0,0,1"
+                                StrokeShape="Rectangle"
+                                BackgroundColor="Transparent"
+                                Padding="14,13">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+
+                                <!-- Aprobada o rechazada, legible de lejos: color Y símbolo. Solo
+                                     el color dejaría fuera a quien no lo distingue. -->
+                                <Border Grid.Column="0"
+                                        WidthRequest="34" HeightRequest="34"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 11"
+                                        BackgroundColor="{StaticResource ErrorTint}"
+                                        VerticalOptions="Center">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding Success}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="{StaticResource SuccessTint}" />
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Label Text="✗"
+                                           FontSize="16"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Error}"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center">
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label" Binding="{Binding Success}" Value="True">
+                                                <Setter Property="Text" Value="✓" />
+                                                <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
+                                </Border>
+
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <Label Text="{Binding Action}"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="{Binding Detail}"
+                                           FontSize="12"
+                                           LineBreakMode="WordWrap"
+                                           TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+
+                                <!-- Hora y cajero a la derecha, alineados: así se recorre la
+                                     columna con la vista para ubicar una operación por su hora. -->
+                                <VerticalStackLayout Grid.Column="2" Spacing="3" VerticalOptions="Center">
+                                    <Label Text="{Binding TimestampUtc, StringFormat='{0:HH:mm}'}"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           HorizontalTextAlignment="End"
+                                           TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="{Binding TimestampUtc, StringFormat='{0:dd/MM/yyyy}'}"
+                                           FontSize="11"
+                                           HorizontalTextAlignment="End"
+                                           TextColor="{StaticResource TextMuted}" />
+                                    <Label Text="{Binding CashierId}"
+                                           FontSize="11"
+                                           FontAttributes="Bold"
+                                           HorizontalTextAlignment="End"
+                                           TextColor="{StaticResource Primary}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Border>
+
+        <VerticalStackLayout Grid.Row="3" Padding="24,14,24,20" Spacing="10">
+            <Label Text="{Binding LastError}"
+                   FontSize="12"
+                   TextColor="{StaticResource Error}"
+                   LineBreakMode="WordWrap"
+                   IsVisible="{Binding HasLastError}" />
+
+            <!-- Volver al menú es la salida principal y va primero. Vaciar queda al final y en el
+                 estilo más discreto: borra el registro de la caja y no debe estar al alcance del
+                 pulgar por accidente. -->
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                <Button Grid.Column="0"
+                        Text="←  Volver al menú"
+                        Style="{StaticResource SecondaryButton}"
+                        MinimumWidthRequest="230"
+                        Command="{x:Static shell:AppShell.BackHomeCommand}" />
+
+                <Button Grid.Column="1"
+                        Text="⟳  Refrescar"
+                        Style="{StaticResource SecondaryButton}"
+                        MinimumWidthRequest="170"
+                        Command="{Binding RefreshListCommand}" />
+
+                <Button Grid.Column="3"
+                        Text="Vaciar bitácora"
+                        Style="{StaticResource BorderlessButton}"
+                        Command="{Binding ClearCommand}" />
+            </Grid>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             x:Class="Permoda.Pay.Maui.Views.Controls.CashierChip"
+             x:Name="Root">
+    <Border StrokeThickness="1"
+            StrokeShape="RoundRectangle 22"
+            Stroke="{StaticResource BorderBrush}"
+            BackgroundColor="{StaticResource Surface}"
+            Padding="6,6,14,6">
+        <Border.Shadow>
+            <Shadow Brush="{StaticResource ShadowBrush}" Offset="0,1" Radius="6" Opacity="0.08" />
+        </Border.Shadow>
+        <Border.Behaviors>
+            <behaviors:EntranceBehavior DelayMs="40" />
+        </Border.Behaviors>
+        <Grid ColumnDefinitions="36,*,Auto" ColumnSpacing="10" VerticalOptions="Center">
+            <Border Grid.Column="0"
+                    WidthRequest="36" HeightRequest="36"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 18"
+                    BackgroundColor="{StaticResource PrimaryTint}"
+                    HorizontalOptions="Center" VerticalOptions="Center">
+                <Label Text="{Binding Initials, Source={x:Reference Root}}"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource PrimaryDark}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+            <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                <Label Text="CAJERO EN TURNO"
+                       Style="{StaticResource FieldLabel}"
+                       FontSize="10" />
+                <Label Text="{Binding CashierName, Source={x:Reference Root}}"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextPrimary}"
+                       LineBreakMode="TailTruncation" />
+            </VerticalStackLayout>
+            <Label Grid.Column="2"
+                   Text="›"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   TextColor="{StaticResource TextMuted}"
+                   VerticalOptions="Center"
+                   Margin="4,0,0,0" />
+        </Grid>
+    </Border>
+</ContentView>

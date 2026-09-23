@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pantalla nativa que se levanta cuando HiPOS pide un cobro (SALE o NEGATIVE_SALE).
+
+    Es un layout nativo, no una página MAUI, y es deliberado: la respuesta a HiPOS
+    (setResult + finish) tiene que salir SIEMPRE de esta misma Activity. Coordinar la respuesta
+    con una página MAUI viviendo en otra Activity agrega un modo de fallo —quedarse sin
+    responder— que el contrato de ICG castiga con la venta colgada y el cajero perdiendo el
+    cobro. Los colores son los mismos tokens del design system.
+
+    El selector Activar/Redimir (#charge_mode_row) está en el layout por compatibilidad con el
+    contrato, pero siempre se oculta: HiPOS ya decidió la operación según el TransactionType
+    y el cajero no debe poder cambiarla a mitad de flujo.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#F1F5FB">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="28dp">
+
+        <TextView
+            android:id="@+id/charge_eyebrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="COBRO CON BONO"
+            android:textColor="#24509E"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.12" />
+
+        <TextView
+            android:id="@+id/charge_amount_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Total a cobrar"
+            android:textColor="#5B6B84"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/charge_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#152238"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+        <!-- Selector Activar/Redimir: siempre oculto. Se conserva en el layout por compatibilidad
+             con el contrato histórico del módulo, pero HiPOS ya eligió la operación. -->
+        <LinearLayout
+            android:id="@+id/charge_mode_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/charge_mode_activate"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="56dp"
+                android:layout_marginEnd="8dp"
+                android:text="Activar bono"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textColor="#5B6B84"
+                android:background="#EAF0F8" />
+
+            <Button
+                android:id="@+id/charge_mode_redeem"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="56dp"
+                android:text="Redimir saldo"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textColor="#5B6B84"
+                android:background="#EAF0F8" />
+        </LinearLayout>
+
+        <!-- Selector Física/Virtual: solo visible cuando la operación es Activar. -->
+        <LinearLayout
+            android:id="@+id/charge_kind_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Button
+                android:id="@+id/charge_kind_physical"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:text="Físico"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:textColor="#5B6B84"
+                android:background="#EAF0F8" />
+
+            <Button
+                android:id="@+id/charge_kind_virtual"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="48dp"
+                android:text="Virtual (correo)"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                android:textColor="#5B6B84"
+                android:background="#EAF0F8" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/charge_field_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="26dp"
+            android:text="SERIAL DEL BONO"
+            android:textColor="#5B6B84"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1" />
+
+        <EditText
+            android:id="@+id/charge_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#FFFFFF"
+            android:padding="18dp"
+            android:hint="Escanea o digita el serial"
+            android:textColorHint="#94A3B8"
+            android:textColor="#152238"
+            android:textSize="22sp"
+            android:inputType="text"
+            android:imeOptions="actionDone"
+            android:singleLine="true"
+            android:importantForAutofill="no" />
+
+        <TextView
+            android:id="@+id/charge_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="#5B6B84"
+            android:textSize="13sp"
+            android:visibility="visible" />
+
+        <TextView
+            android:id="@+id/charge_error"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="#B23A2A"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/charge_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/charge_cancel"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="64dp"
+                android:layout_marginEnd="12dp"
+                android:text="Cancelar"
+                android:textAllCaps="false"
+                android:textSize="17sp"
+                android:textColor="#24509E"
+                android:background="#EAF0F8" />
+
+            <Button
+                android:id="@+id/charge_confirm"
+                android:layout_width="0dp"
+                android:layout_weight="2"
+                android:layout_height="64dp"
+                android:text="Cobrar"
+                android:textAllCaps="false"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="#24509E" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

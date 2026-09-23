@@ -1,0 +1,587 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             xmlns:vmpos="clr-namespace:Permoda.Pay.Maui.ViewModels.Pos"
+             xmlns:shell="clr-namespace:Permoda.Pay.Maui"
+             x:Class="Permoda.Pay.Maui.Views.Pos.ActivateTabPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Activar bono">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <controls:TopBarView Grid.Row="0" ParentText="Inicio" SectionText="Activar bono" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20,10,20,12" Spacing="10" MaximumWidthRequest="1180">
+
+                <!-- Encabezado de la operación + estado de Ogloba -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Grid.Column="0" Spacing="6">
+                        <Label Text="OPERACIÓN"
+                               Style="{StaticResource FieldLabel}"
+                               TextColor="{StaticResource Primary}" />
+                        <Label Text="Activar bono"
+                               FontSize="26"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Crea un bono prepago nuevo. Elige el tipo, escanea o digita el serial y define el monto."
+                               FontSize="12"
+                               TextColor="{StaticResource TextSecondary}" />
+                    </VerticalStackLayout>
+
+                    <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="End">
+                        <HorizontalStackLayout.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Header.CheckConnectivityCommand}" />
+                        </HorizontalStackLayout.GestureRecognizers>
+                        <Label Text="●" FontSize="10" VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="online">
+                                    <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="offline">
+                                    <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="checking">
+                                    <Setter Property="TextColor" Value="{StaticResource Accent}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding Header.ShortStatusText}"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="online">
+                                    <Setter Property="TextColor" Value="{StaticResource Success}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="offline">
+                                    <Setter Property="TextColor" Value="{StaticResource Error}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding Header.ConnectivityState}" Value="checking">
+                                    <Setter Property="TextColor" Value="{StaticResource Accent}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Grid>
+
+                <!-- Solo cuando el módulo lo levantó HiPOS para un recaudo: por cuánto es, y a
+                     quién se le está recaudando. Estos datos vuelven a HiPOS y quedan en la
+                     bitácora — son con lo que se reconstruye el caso si el cliente reclama. -->
+                <Border IsVisible="{Binding HasSaleAmountBanner}"
+                        Background="{StaticResource HeroBrush}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="18,14"
+                        Margin="0,4,0,4">
+                    <Border.Behaviors>
+                        <behaviors:RevealBehavior />
+                    </Border.Behaviors>
+                    <Label Text="{Binding SaleAmountBanner}"
+                           FontSize="19"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource OnHero}" />
+                </Border>
+
+                <!-- Datos del cliente: cédula + nombre y apellidos. Se capturan para TODA
+                     activación (física o virtual, con o sin HiPOS): la cédula y el nombre se
+                     concatenan en "CC-NombreApellido" y se mandan a Ogloba en el campo
+                     note/message. Sin estos datos la activación no procede. -->
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="DATOS DEL CLIENTE" Style="{StaticResource FieldLabel}" />
+
+                    <Grid ColumnDefinitions="Auto,*,*" ColumnSpacing="10" RowSpacing="8">
+                        <Border Grid.Column="0"
+                                BackgroundColor="{StaticResource Surface}"
+                                Stroke="{StaticResource BorderBrush}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 16"
+                                Padding="10,0"
+                                MinimumWidthRequest="120">
+                            <Picker ItemsSource="{Binding DocumentTypes}"
+                                    SelectedItem="{Binding CustomerDocumentType, Mode=TwoWay}"
+                                    FontSize="17"
+                                    TextColor="{StaticResource TextPrimary}"
+                                    VerticalOptions="Center" />
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource InputField}">
+                            <Entry Placeholder="Número de documento"
+                                   FontSize="17"
+                                   Keyboard="Numeric"
+                                   Text="{Binding CustomerDocumentNumber, Mode=TwoWay}" />
+                        </Border>
+
+                        <Border Grid.Column="2" Style="{StaticResource InputField}">
+                            <Entry Placeholder="Nombre y apellidos"
+                                   FontSize="17"
+                                   Text="{Binding CustomerName, Mode=TwoWay}" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Preview del string concatenado que se va a mandar a Ogloba. Le permite
+                         al cajero verificar antes de activar y atrapar errores tipográficos. -->
+                    <Label Text="{Binding CustomerMobileNoPreview, StringFormat='Se envía como: {0}'}"
+                           FontSize="11"
+                           TextColor="{StaticResource TextSecondary}"
+                           IsVisible="{Binding HasCustomerData}"
+                           Margin="4,2,0,0" />
+                </VerticalStackLayout>
+
+                <!-- Tipo de bono: segmentado Físico / Virtual.
+                     Solo aparece si NO se llegó desde la pantalla de elección (que es el camino
+                     normal). Ahí el tipo ya está decidido y cambiarlo acá, con un bono a medio
+                     capturar, solo servía para equivocarse. -->
+                <VerticalStackLayout Spacing="8"
+                                     IsVisible="{Binding IsModeLocked, Converter={StaticResource InverseBool}}">
+                    <Label Text="TIPO DE BONO" Style="{StaticResource FieldLabel}" />
+                    <Border BackgroundColor="{StaticResource SurfaceAlt}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 28"
+                            Padding="5">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
+
+                            <Border Grid.Column="0"
+                                    BackgroundColor="Transparent"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    Padding="0,10">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectModeCommand}" CommandParameter="Physical" />
+                                </Border.GestureRecognizers>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsPhysical}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="Físico"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       TextColor="{StaticResource TextSecondary}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsPhysical}" Value="True">
+                                            <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                            </Border>
+
+                            <Border Grid.Column="1"
+                                    BackgroundColor="Transparent"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 24"
+                                    Padding="0,10">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SelectModeCommand}" CommandParameter="Virtual" />
+                                </Border.GestureRecognizers>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsVirtual}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="Virtual"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
+                                       TextColor="{StaticResource TextSecondary}">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding IsVirtual}" Value="True">
+                                            <Setter Property="TextColor" Value="{StaticResource Primary}" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Captura: serial/correo a la izquierda, monto a la derecha.
+                     Entra con movimiento porque es el destino de "físico o virtual": sin esto,
+                     elegir el tipo cambiaba la pantalla de golpe y no se leía como una
+                     transición sino como un parpadeo. -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                    <Grid.Behaviors>
+                        <behaviors:EntranceBehavior DelayMs="60" />
+                    </Grid.Behaviors>
+
+                    <Label Grid.Row="0" Grid.Column="0" Text="{Binding DraftCardLabel}" Style="{StaticResource FieldLabel}" />
+                    <Label Grid.Row="0" Grid.Column="1" Text="MONTO (PESOS COP)" Style="{StaticResource FieldLabel}" />
+
+                    <Border Grid.Row="1" Grid.Column="0"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="12,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0"
+                                    WidthRequest="36" HeightRequest="36"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    VerticalOptions="Center">
+                                <Image Source="ic_card.png"
+                                       WidthRequest="18" HeightRequest="18"
+                                       Aspect="AspectFit"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Entry x:Name="DraftCardEntry"
+                                   Grid.Column="1"
+                                   Placeholder="{Binding DraftCardPlaceholder}"
+                                   FontSize="18"
+                                   CharacterSpacing="2"
+                                   Keyboard="Plain"
+                                   BackgroundColor="Transparent"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   Text="{Binding DraftCardValue, Mode=TwoWay}"
+                                   Completed="OnDraftCardCompleted"
+                                   VerticalOptions="Center"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                                <Entry.Behaviors>
+                                    <!-- El siguiente escaneo pisa al anterior en vez de pegarse
+                                         detrás del serial ya capturado. -->
+                                    <behaviors:ScanReplaceBehavior />
+                                </Entry.Behaviors>
+                                <Entry.Triggers>
+                                    <!-- En Virtual se captura el correo del cliente: teclado de
+                                         email, sin espaciado entre caracteres (que sirve para
+                                         leer un serial, pero estorba en una dirección). -->
+                                    <DataTrigger TargetType="Entry" Binding="{Binding IsVirtual}" Value="True">
+                                        <Setter Property="Keyboard" Value="Email" />
+                                        <Setter Property="CharacterSpacing" Value="0" />
+                                        <Setter Property="FontSize" Value="19" />
+                                    </DataTrigger>
+                                </Entry.Triggers>
+                            </Entry>
+
+                            <Border Grid.Column="2"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    Padding="12,9"
+                                    VerticalOptions="Center"
+                                    IsVisible="{Binding IsPhysical}">
+                                <Border.GestureRecognizers>
+                                    <!-- Deja el cursor en el campo para que el lector wedge
+                                         descargue ahí el serial que escanee. -->
+                                    <TapGestureRecognizer Tapped="OnScanTapped" />
+                                </Border.GestureRecognizers>
+                                <HorizontalStackLayout Spacing="7">
+                                    <Image Source="ic_search.png"
+                                           WidthRequest="16" HeightRequest="16"
+                                           Aspect="AspectFit"
+                                           VerticalOptions="Center" />
+                                    <Label Text="Escanear"
+                                           FontSize="12"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Primary}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="1" Grid.Column="1"
+                            BackgroundColor="{StaticResource Surface}"
+                            Stroke="{StaticResource BorderBrush}"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="12,6">
+                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                            <Border Grid.Column="0"
+                                    WidthRequest="36" HeightRequest="36"
+                                    BackgroundColor="{StaticResource PrimaryTint}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 12"
+                                    VerticalOptions="Center">
+                                <Label Text="$"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource Primary}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <Label Grid.Column="1"
+                                   Text="$"
+                                   FontSize="16"
+                                   TextColor="{StaticResource TextMuted}"
+                                   VerticalOptions="Center" />
+
+                            <!-- El placeholder decía "50.000", y una cifra de ejemplo en un campo
+                                 de dinero se lee como un valor ya puesto: había que mirar dos
+                                 veces para saber si el campo estaba vacío. Ahora dice qué hacer. -->
+                            <Entry Grid.Column="2"
+                                   Placeholder="Ingresa el valor del bono"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   Keyboard="Numeric"
+                                   BackgroundColor="Transparent"
+                                   TextColor="{StaticResource TextPrimary}"
+                                   PlaceholderColor="{StaticResource TextMuted}"
+                                   Text="{Binding DraftAmountText, Mode=TwoWay}"
+                                   VerticalOptions="Center"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                                <Entry.Behaviors>
+                                    <behaviors:ThousandsSeparatorBehavior />
+                                </Entry.Behaviors>
+                            </Entry>
+                        </Grid>
+                    </Border>
+
+                    <Label Grid.Row="2" Grid.Column="1"
+                           Text="{Binding AmountHelpText}"
+                           FontSize="11"
+                           TextColor="{StaticResource TextMuted}" />
+                </Grid>
+
+                <!-- Lote de bonos a activar -->
+                <Label Text="{Binding RowsCountText}"
+                       FontSize="12"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource TextSecondary}"
+                       Margin="0,8,0,0"
+                       IsVisible="{Binding HasRows}" />
+
+                <!-- Mismas dos reglas que en Redimir, escritas donde el cajero las lee. -->
+                <Label Text="Desliza una fila hacia la izquierda para eliminarla · Tócala para editarla"
+                       FontSize="11"
+                       TextColor="{StaticResource TextMuted}"
+                       Margin="0,0,0,6"
+                       IsVisible="{Binding HasRows}" />
+
+                <CollectionView ItemsSource="{Binding Rows}" SelectionMode="None" IsVisible="{Binding HasRows}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="vmpos:ActivationFormRow">
+
+                            <!-- Reveal, no ejecución directa: deslizar descubre el botón rojo y
+                                 hay que tocarlo. Dos gestos para borrar un bono ya capturado. -->
+                            <SwipeView Margin="0,0,0,8">
+                                <SwipeView.RightItems>
+                                    <SwipeItems Mode="Reveal">
+                                        <SwipeItemView IsEnabled="{Binding IsRemovable}"
+                                                       Command="{Binding Source={x:Reference Root}, Path=BindingContext.ReturnRowCommand}"
+                                                       CommandParameter="{Binding .}">
+                                            <Border BackgroundColor="{StaticResource Error}"
+                                                    StrokeThickness="0"
+                                                    StrokeShape="RoundRectangle 14"
+                                                    Padding="24,0"
+                                                    WidthRequest="150">
+                                                <VerticalStackLayout Spacing="3"
+                                                                     HorizontalOptions="Center"
+                                                                     VerticalOptions="Center">
+                                                    <Label Text="🗑"
+                                                           FontSize="22"
+                                                           HorizontalOptions="Center" />
+                                                    <Label Text="Eliminar"
+                                                           FontSize="13"
+                                                           FontAttributes="Bold"
+                                                           TextColor="White"
+                                                           HorizontalOptions="Center" />
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </SwipeItemView>
+                                    </SwipeItems>
+                                </SwipeView.RightItems>
+
+                            <Border Stroke="{StaticResource BorderBrush}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 14"
+                                    Padding="12,9">
+                                <Border.GestureRecognizers>
+                                    <!-- Tocar la fila la devuelve al formulario para corregirla. -->
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={x:Reference Root}, Path=BindingContext.ReturnRowCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Border.Behaviors>
+                                    <behaviors:PulseOnPropertyChangeBehavior PropertyName="Status" />
+                                </Border.Behaviors>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Approved">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource SuccessTint}" />
+                                        <Setter Property="Stroke" Value="{StaticResource SuccessBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="PendingReview">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource SuccessTint}" />
+                                        <Setter Property="Stroke" Value="{StaticResource SuccessBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Rejected">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource ErrorTint}" />
+                                        <Setter Property="Stroke" Value="{StaticResource ErrorBrush}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Pending">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding Status}" Value="Processing">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource PrimaryTint}" />
+                                        <Setter Property="Stroke" Value="{StaticResource PrimaryBrush}" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
+                                    <Border Grid.Column="0"
+                                            WidthRequest="32" HeightRequest="32"
+                                            BackgroundColor="{StaticResource PrimaryTint}"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 10"
+                                            VerticalOptions="Center">
+                                        <Label Text="✓"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsApproved}" />
+                                        <Label Text="⏳"
+                                               FontSize="16"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsPendingReview}" />
+                                        <Label Text="✗"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Error}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsRejected}" />
+                                        <Label Text="…"
+                                               FontSize="18"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource Primary}"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsProcessing}" />
+                                        <Image Source="ic_card.png"
+                                               WidthRequest="18" HeightRequest="18"
+                                               Aspect="AspectFit"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IsPending}" />
+                                    </Border>
+
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label Text="{Binding CardValue}"
+                                               FontSize="14"
+                                               CharacterSpacing="1"
+                                               TextColor="{StaticResource TextPrimary}"
+                                               LineBreakMode="TailTruncation">
+                                            <Label.Triggers>
+                                                <DataTrigger TargetType="Label" Binding="{Binding IsVirtual}" Value="True">
+                                                    <Setter Property="CharacterSpacing" Value="0" />
+                                                </DataTrigger>
+                                            </Label.Triggers>
+                                        </Label>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Label Text="{Binding ModeLabel}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource Primary}" />
+                                            <Label Text="{Binding StatusLabel}"
+                                                   FontSize="11"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextMuted}" />
+                                        </HorizontalStackLayout>
+                                        <Label Text="{Binding ResultDetail}"
+                                               FontSize="11"
+                                               TextColor="{StaticResource TextSecondary}"
+                                               IsVisible="{Binding HasResultDetail}" />
+                                    </VerticalStackLayout>
+
+                                    <Label Grid.Column="2"
+                                           Text="{Binding AmountTextDisplay}"
+                                           FontSize="15"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource TextPrimary}"
+                                           VerticalOptions="Center" />
+
+                                    <!-- Señal de fila editable. El toque lo recibe la fila entera. -->
+                                    <Label Grid.Column="3"
+                                           Text="✎"
+                                           FontSize="16"
+                                           TextColor="{StaticResource TextMuted}"
+                                           VerticalOptions="Center"
+                                           IsVisible="{Binding IsRemovable}" />
+                                </Grid>
+                            </Border>
+                            </SwipeView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Mismo control y mismo estilo que en Redimir: un Button, no un Border con un
+                     gesto. Ver la nota en RedeemTabPage.xaml — como Border se le quedaba pegado
+                     el fondo de presión y parecía deshabilitado. -->
+                <Button Text="✓   Agregar a la lista"
+                        Style="{StaticResource PrimaryButton}"
+                        FontSize="15"
+                        Margin="0,4,0,0"
+                        Command="{Binding AddDraftCommand}" />
+
+                <!-- Error inline (reemplaza a los toasts) -->
+                <Label Text="{Binding LastError}"
+                       FontSize="12"
+                       TextColor="{StaticResource Error}"
+                       Margin="0,8,0,0"
+                       IsVisible="{Binding HasLastError}" />
+
+                <!-- Resumen + acciones del lote. "Volver al menú" va acá y no solo como flecha
+                     en la barra: es donde el cajero tiene la mano al terminar. -->
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14" Margin="0,8,0,0">
+                    <Button Grid.Column="0"
+                            Text="←  Volver al menú"
+                            Style="{StaticResource SecondaryButton}"
+                            MinimumWidthRequest="205"
+                            IsVisible="{Binding CanLeaveToMenu}"
+                            Command="{x:Static shell:AppShell.BackHomeCommand}" />
+
+                    <Label Grid.Column="1"
+                           Text="{Binding SummaryText}"
+                           FontSize="12"
+                           TextColor="{StaticResource TextSecondary}"
+                           VerticalOptions="Center" />
+
+                    <Button Grid.Column="2"
+                            Text="↺  Limpiar"
+                            Style="{StaticResource SecondaryButton}"
+                            HeightRequest="50"
+                            MinimumWidthRequest="165"
+                            Command="{Binding ClearAllCommand}"
+                            IsEnabled="{Binding HasRows}" />
+
+                    <Button Grid.Column="3"
+                            Text="{Binding ProcessButtonText}"
+                            Style="{StaticResource PrimaryButton}"
+                            FontSize="15"
+                            HeightRequest="50"
+                            MinimumWidthRequest="235"
+                            Padding="34,0"
+                            Command="{Binding ProcessAllCommand}"
+                            IsEnabled="{Binding CanProcess}" />
+                </Grid>
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   Color="{StaticResource Primary}" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Cierre de la operación: se superpone a toda la pantalla y se queda hasta que el
+             cajero lo cierra, porque es lo que tiene que leerle al cliente. -->
+        <controls:ResultOverlayView Grid.Row="0" Grid.RowSpan="2"
+                                    IsVisible="{Binding HasResult}"
+                                    Headline="{Binding ResultHeadline}"
+                                    Subline="{Binding ResultSubline}"
+                                    IsSuccess="{Binding ResultIsSuccess}"
+                                    Lines="{Binding ResultLines}"
+                                    FootNote="{Binding ResultFootNote}"
+                                    DismissCommand="{Binding DismissResultCommand}" />
+    </Grid>
+</ContentPage>

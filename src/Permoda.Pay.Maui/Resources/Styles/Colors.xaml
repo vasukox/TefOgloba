@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ===================================================================================
+         PALETA DE MARCA KOAJ · Permoda
+
+           #F2F2F2  neutro      limpieza y versatilidad — el fondo de la app
+           #E0E275  verde lima  energía y actitud       — el acento
+           #4554A1  azul        confianza y solidez     — la acción
+           #333333  gris oscuro carácter y fuerza       — el texto y la navegación
+
+         Toda la app se pinta desde estos tokens: no hay un solo hex suelto en las pantallas,
+         así que cambiar la marca es cambiar este archivo.
+
+         REGLA DURA DEL LIMA: es SUPERFICIE, nunca texto sobre fondo claro.
+         #E0E275 sobre blanco da 1.3:1 de contraste — ilegible (el mínimo accesible es 4.5:1).
+         Con texto #333333 encima da 11:1, y sobre el azul de marca da 5.9:1. Por eso existe
+         `Lime` con su `OnLime`, y por eso el token `Accent` —que SÍ se usa como color de
+         texto en siete pantallas— siguió siendo azul y no se reemplazó por el lima.
+
+         Los colores FUNCIONALES (Success/Error/Warning/Info) conservan su semántica universal:
+         un error en lima o en azul se lee como neutral, no como error.
+         =================================================================================== -->
+
+    <!-- ·· Azul de marca: la acción (botones, enlaces, estados activos) ·· -->
+    <Color x:Key="Primary">#4554A1</Color>
+    <Color x:Key="PrimaryDark">#333F7A</Color>
+    <Color x:Key="PrimaryTint">#E7E9F5</Color>
+
+    <!-- ·· Verde lima: el acento de marca. SIEMPRE como fondo, con OnLime encima ·· -->
+    <Color x:Key="Lime">#E0E275</Color>
+    <Color x:Key="LimeDeep">#C7C955</Color>
+    <Color x:Key="LimeTint">#F6F7DC</Color>
+    <!-- Único color de texto admitido sobre el lima. -->
+    <Color x:Key="OnLime">#333333</Color>
+
+    <!-- ·· Accent: azul más claro que Primary. Se usa como TEXTO sobre fondo claro
+              (estado "verificando") y como fondo de chip con texto blanco, así que tiene que
+              funcionar en los dos sentidos: 5.3:1 contra blanco en ambas direcciones. ·· -->
+    <Color x:Key="Accent">#3A63B8</Color>
+    <Color x:Key="AccentDeep">#2A4A8E</Color>
+    <Color x:Key="AccentTint">#E4EAF7</Color>
+
+    <Color x:Key="Success">#3F7D4E</Color>
+    <Color x:Key="SuccessDeep">#2E5E3A</Color>
+    <Color x:Key="SuccessTint">#E4F0E6</Color>
+    <Color x:Key="Error">#B23A2A</Color>
+    <Color x:Key="ErrorDeep">#7E2418</Color>
+    <Color x:Key="ErrorTint">#F7E7E4</Color>
+    <Color x:Key="Warning">#C77700</Color>
+    <Color x:Key="Info">#3B6BAA</Color>
+    <Color x:Key="InfoTint">#E4EAF7</Color>
+
+    <!-- ·· Neutros ··
+         Background es el #F2F2F2 de la marca. Surface es blanco puro para que las tarjetas
+         se despeguen del fondo. SurfaceAlt es un paso MÁS oscuro que el fondo (no igual), si
+         no los campos de texto desaparecerían cuando se dibujan directo sobre la página. -->
+    <Color x:Key="Background">#F2F2F2</Color>
+    <Color x:Key="Surface">#FFFFFF</Color>
+    <Color x:Key="SurfaceAlt">#E9E9E9</Color>
+    <Color x:Key="Border">#DCDCDC</Color>
+    <Color x:Key="Divider">#E4E4E4</Color>
+
+    <!-- ·· Texto ··
+         TextPrimary es el #333333 de la marca. Los grises secundarios se derivan de él y se
+         eligieron por contraste medido sobre blanco: 6.9:1 y 4.6:1. Aclararlos más los deja
+         por debajo del mínimo accesible en una tablet a un metro de distancia. -->
+    <Color x:Key="TextPrimary">#333333</Color>
+    <Color x:Key="TextSecondary">#5F5F5F</Color>
+    <Color x:Key="TextMuted">#757575</Color>
+    <Color x:Key="OnDark">#FFFFFF</Color>
+    <Color x:Key="OnDarkMuted">#BFBFBF</Color>
+    <Color x:Key="OnHero">#FFFFFF</Color>
+    <Color x:Key="OnHeroMuted">#C7CDE9</Color>
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+
+    <!-- Navegación: el gris oscuro de la marca, que es el que "ancla la identidad". -->
+    <Color x:Key="NavSurface">#333333</Color>
+    <Color x:Key="NavSurfaceMuted">#9E9E9E</Color>
+    <Color x:Key="ShadowColor">#333333</Color>
+
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}" />
+    <SolidColorBrush x:Key="PrimaryDarkBrush" Color="{StaticResource PrimaryDark}" />
+    <SolidColorBrush x:Key="PrimaryTintBrush" Color="{StaticResource PrimaryTint}" />
+    <SolidColorBrush x:Key="LimeBrush" Color="{StaticResource Lime}" />
+    <SolidColorBrush x:Key="LimeDeepBrush" Color="{StaticResource LimeDeep}" />
+    <SolidColorBrush x:Key="LimeTintBrush" Color="{StaticResource LimeTint}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}" />
+    <SolidColorBrush x:Key="AccentDeepBrush" Color="{StaticResource AccentDeep}" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource Success}" />
+    <SolidColorBrush x:Key="SuccessDeepBrush" Color="{StaticResource SuccessDeep}" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource Error}" />
+    <SolidColorBrush x:Key="ErrorDeepBrush" Color="{StaticResource ErrorDeep}" />
+    <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource Background}" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource Surface}" />
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="{StaticResource SurfaceAlt}" />
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource Border}" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource TextMuted}" />
+    <SolidColorBrush x:Key="NavSurfaceBrush" Color="{StaticResource NavSurface}" />
+    <SolidColorBrush x:Key="ShadowBrush" Color="{StaticResource ShadowColor}" />
+
+    <!-- Degradado del encabezado (hero): el azul de marca con su tono profundo. -->
+    <LinearGradientBrush x:Key="HeroBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Primary}" Offset="0.0" />
+        <GradientStop Color="{StaticResource PrimaryDark}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Degradados de botón: mismo par de tonos que ya usa cada estado (base → deep),
+         solo que en diagonal en vez de plano, para darle al CTA el mismo cuerpo/profundidad
+         que ya tiene HeroCard. Ningún color nuevo — son los mismos tokens de siempre. -->
+    <LinearGradientBrush x:Key="PrimaryButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Primary}" Offset="0.0" />
+        <GradientStop Color="{StaticResource PrimaryDark}" Offset="1.0" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="SuccessButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Success}" Offset="0.0" />
+        <GradientStop Color="{StaticResource SuccessDeep}" Offset="1.0" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AccentButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Accent}" Offset="0.0" />
+        <GradientStop Color="{StaticResource AccentDeep}" Offset="1.0" />
+    </LinearGradientBrush>
+    <!-- Botón de acento de marca. Lleva texto OnLime (#333333), NUNCA blanco. -->
+    <LinearGradientBrush x:Key="LimeButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Lime}" Offset="0.0" />
+        <GradientStop Color="{StaticResource LimeDeep}" Offset="1.0" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="DangerButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Error}" Offset="0.0" />
+        <GradientStop Color="{StaticResource ErrorDeep}" Offset="1.0" />
+    </LinearGradientBrush>
+</ResourceDictionary>

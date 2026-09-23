@@ -1,0 +1,41 @@
+# Build artifacts
+artifacts/
+bin/
+obj/
+*.user
+
+# Signing material
+assets/keystore/
+*.pfx
+*.p12
+*.keystore
+*.jks
+
+# Sensitive local config
+*.env
+secrets/
+
+# Hojas de cálculo con credenciales.
+# ==========================================================================================
+# `CREDENCIALES Y PARAMETROS TEF-PERMODA.xlsx` trae las subscription keys de producción de
+# las tiendas y, además, credenciales de Nequi, Addi, Sistecrédito y Pluxee. Estaba sin
+# rastrear y un `git add -A` lo habría publicado entero.
+#
+# Se excluye la extensión completa y no solo ese nombre: el archivo va a llegar con otros
+# nombres, con "(2)", con fecha, o copiado a otra carpeta, y una regla por nombre exacto
+# falla justo la vez que alguien lo renombra.
+*.xlsx
+*.xls
+*.csv
+
+# Local-only tooling and IDE state (not part of the product)
+.claude/
+.impeccable/
+.idea/
+*.log
+emu_full.log
+tefogloba_crash.log
+.vs/
+
+# External reference PDFs (kept locally but not in repo)
+*.pdf

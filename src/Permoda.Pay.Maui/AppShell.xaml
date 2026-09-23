@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="Permoda.Pay.Maui.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:Permoda.Pay.Maui.Views.Pos"
+    xmlns:setup="clr-namespace:Permoda.Pay.Maui.Views.Setup"
+    xmlns:admin="clr-namespace:Permoda.Pay.Maui.Views.Admin"
+    xmlns:root="clr-namespace:Permoda.Pay.Maui.Views"
+    Title="TefOgloba"
+    FlyoutBehavior="Flyout"
+    FlyoutWidth="300"
+    FlyoutBackgroundColor="{StaticResource Surface}"
+    BackgroundColor="{StaticResource PrimaryDark}"
+    ForegroundColor="{StaticResource OnDark}"
+    TitleColor="{StaticResource OnDark}">
+
+    <Shell.FlyoutHeader>
+        <Grid BackgroundColor="{StaticResource PrimaryDark}" HeightRequest="180">
+            <VerticalStackLayout Padding="22,24,22,22" Spacing="6" VerticalOptions="End">
+                <Label Text="TEF OGLOBA" Style="{StaticResource HeroLabel}" />
+                <Label Text="KOAJ · Permoda" Style="{StaticResource HeroValue}" FontSize="22" />
+            </VerticalStackLayout>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <Shell.Resources>
+        <ResourceDictionary>
+            <Style TargetType="FlyoutItem" ApplyToDerivedTypes="True">
+                <Setter Property="Shell.FlyoutBackgroundColor" Value="Transparent" />
+            </Style>
+            <Style TargetType="Label" Class="FlyoutItemLabelStyle">
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="FontAttributes" Value="Bold" />
+            </Style>
+            <Style TargetType="Image" Class="FlyoutItemImageStyle">
+                <Setter Property="HeightRequest" Value="22" />
+                <Setter Property="WidthRequest" Value="22" />
+                <Setter Property="Aspect" Value="AspectFit" />
+            </Style>
+        </ResourceDictionary>
+    </Shell.Resources>
+
+    <!-- PRIMERO a propósito: es lo que el Shell dibuja mientras MainActivity resuelve el
+         destino real, que depende de datos que solo existen en runtime. Cuando el primero era
+         Inicio, el menú se dibujaba y desaparecía antes de llegar a la pantalla correcta — la
+         "pestaña falsa" que el cajero veía en cada cobro. Oculto del menú: no es un módulo. -->
+    <FlyoutItem Title="Ogloba" Route="router" FlyoutItemIsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate root:RouterPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Inicio" Icon="ic_home.png" Route="home">
+        <ShellContent ContentTemplate="{DataTemplate views:HomeTabPage}" />
+    </FlyoutItem>
+
+    <!-- Activar bono y Redimir saldo NO se ofrecen en el menú: son operaciones que mueven plata
+         de una factura y las levanta HiPOS, no el cajero por su cuenta. Las rutas siguen
+         existiendo porque son a donde entran esos flujos; solo salen de la navegación manual.
+         Abriendo el APK a mano queda únicamente Consultar saldo. -->
+    <FlyoutItem Title="Activar bono" Icon="ic_sparkles.png" Route="activate" FlyoutItemIsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate views:ActivateTabPage}" />
+    </FlyoutItem>
+
+    <!-- El selector de cajero NO está acá: se registra como ruta global en MauiProgram y se
+         empuja sobre la pestaña activa. Como FlyoutItem con DataTemplate, el Shell terminaba
+         montando la misma instancia de página en dos padres y se veía una copia vacía encima
+         de la buena — la "pestaña que se antepone". -->
+
+    <!-- Alta de cajeros (paso 3 de la configuración). Oculto: es parte del alta, no un módulo. -->
+    <FlyoutItem Title="Registrar cajeros" Route="cashiersetup" FlyoutItemIsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate setup:CashierSetupPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Redimir saldo" Icon="ic_card.png" Route="redeem" FlyoutItemIsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate views:RedeemTabPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Consultar saldo" Icon="ic_search.png" Route="balance">
+        <ShellContent ContentTemplate="{DataTemplate views:BalanceTabPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Bitácora" Icon="ic_list.png" Route="audit">
+        <ShellContent ContentTemplate="{DataTemplate views:AuditTabPage}" />
+    </FlyoutItem>
+
+    <!-- Gestión de usuarios. Visible en el menú para todos, pero la pantalla pide el PIN de
+         administrador antes de mostrar nada: esconder la entrada no protege, solo confunde a
+         quien sí tiene el PIN y no la encuentra. -->
+    <FlyoutItem Title="Usuarios" Icon="ic_user.png" Route="users">
+        <ShellContent ContentTemplate="{DataTemplate admin:UserManagementPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Configuración" Icon="ic_cog.png" Route="setup">
+        <ShellContent ContentTemplate="{DataTemplate setup:SetupPage}" />
+    </FlyoutItem>
+
+</Shell>

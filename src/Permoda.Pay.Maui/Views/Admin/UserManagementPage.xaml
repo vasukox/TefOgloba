@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             xmlns:admin="clr-namespace:Permoda.Pay.Maui.ViewModels.Admin"
+             xmlns:controls="clr-namespace:Permoda.Pay.Maui.Views.Controls"
+             xmlns:shell="clr-namespace:Permoda.Pay.Maui"
+             x:Class="Permoda.Pay.Maui.Views.Admin.UserManagementPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Title="Usuarios">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <controls:TopBarView Grid.Row="0" ParentText="Inicio" SectionText="Usuarios" />
+
+        <ScrollView Grid.Row="1">
+            <!-- La columna se centra en la pantalla. Antes iba pegada al borde izquierdo y en
+                 una tablet ancha dejaba media pantalla vacía a la derecha, con el formulario
+                 arrinconado. -->
+            <VerticalStackLayout Padding="24,18,24,24"
+                                 Spacing="16"
+                                 MaximumWidthRequest="1000"
+                                 HorizontalOptions="Center">
+
+                <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                    <Label Text="ADMINISTRACIÓN"
+                           Style="{StaticResource FieldLabel}"
+                           HorizontalTextAlignment="Center"
+                           TextColor="{StaticResource Primary}" />
+                    <Label Text="Usuarios de la caja"
+                           FontSize="26"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center"
+                           TextColor="{StaticResource TextPrimary}" />
+                </VerticalStackLayout>
+
+                <!-- PUERTA. Quien entra acá puede crearse un usuario y operar firmando con
+                     cualquier nombre, así que el PIN no es un trámite: es lo que sostiene el
+                     login de cajero. -->
+                <Border Style="{StaticResource Card}"
+                        IsVisible="{Binding IsLocked}"
+                        MaximumWidthRequest="560"
+                        HorizontalOptions="Center">
+                    <Border.Behaviors>
+                        <behaviors:EntranceBehavior />
+                    </Border.Behaviors>
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Esta sección es solo para el administrador"
+                               FontSize="17"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="Escribe el PIN que creaste al configurar la terminal."
+                               Style="{StaticResource Caption}" />
+
+                        <Border Style="{StaticResource InputField}">
+                            <Entry Placeholder="PIN de administrador"
+                                   IsPassword="True"
+                                   Keyboard="Numeric"
+                                   FontSize="19"
+                                   Text="{Binding AdminPin, Mode=TwoWay}"
+                                   ReturnCommand="{Binding UnlockCommand}" />
+                        </Border>
+
+                        <Label Text="{Binding Message}"
+                               FontSize="13"
+                               TextColor="{StaticResource Error}"
+                               LineBreakMode="WordWrap"
+                               IsVisible="{Binding HasMessage}" />
+
+                        <Button Text="Entrar"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="54"
+                                Command="{Binding UnlockCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- ===== Contenido, ya desbloqueado ===== -->
+                <VerticalStackLayout Spacing="16" IsVisible="{Binding IsUnlocked}">
+
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="AGREGAR O ACTUALIZAR" Style="{StaticResource FieldLabel}" />
+                            <Label Text="Si el usuario ya existe, se le reemplaza la contraseña. Es la forma de devolverle el acceso a alguien que la olvidó."
+                                   Style="{StaticResource Caption}" />
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <Border Grid.Column="0" Style="{StaticResource InputField}">
+                                    <Entry Placeholder="Usuario"
+                                           FontSize="18"
+                                           IsSpellCheckEnabled="False"
+                                           IsTextPredictionEnabled="False"
+                                           Text="{Binding NewUserName, Mode=TwoWay}" />
+                                </Border>
+                                <Border Grid.Column="1" Style="{StaticResource InputField}">
+                                    <Entry x:Name="PasswordEntry"
+                                           Placeholder="Contraseña (mínimo 4)"
+                                           IsPassword="True"
+                                           FontSize="18"
+                                           Text="{Binding NewPassword, Mode=TwoWay}"
+                                           ReturnCommand="{Binding AddOrUpdateCommand}" />
+                                </Border>
+                            </Grid>
+
+                            <Button Text="Guardar usuario"
+                                    Style="{StaticResource PrimaryButton}"
+                                    HeightRequest="54"
+                                    Command="{Binding AddOrUpdateCommand}"
+                                    IsEnabled="{Binding CanAdd}" />
+
+                            <Label Text="{Binding Notice}"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Success}"
+                                   LineBreakMode="WordWrap"
+                                   IsVisible="{Binding HasNotice}" />
+
+                            <Label Text="{Binding Message}"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Error}"
+                                   LineBreakMode="WordWrap"
+                                   IsVisible="{Binding HasMessage}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="USUARIOS REGISTRADOS" Style="{StaticResource FieldLabel}" />
+
+                            <Label Text="Todavía no hay usuarios. Agrega el primero arriba."
+                                   Style="{StaticResource Caption}"
+                                   IsVisible="{Binding HasUsers, Converter={StaticResource InverseBool}}" />
+
+                            <CollectionView ItemsSource="{Binding Users}"
+                                            SelectionMode="None"
+                                            IsVisible="{Binding HasUsers}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate x:DataType="admin:ManagedUser">
+                                        <Border Stroke="{StaticResource BorderBrush}"
+                                                StrokeThickness="0,0,0,1"
+                                                StrokeShape="Rectangle"
+                                                BackgroundColor="Transparent"
+                                                Padding="4,14">
+                                            <!-- Un usuario desactivado se atenúa entero: se lee de
+                                                 un vistazo que está ahí pero no cuenta, sin tener
+                                                 que ir a leer su etiqueta de estado. -->
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsEnabled}" Value="False">
+                                                    <Setter Property="Opacity" Value="0.55" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+                                                <Border Grid.Column="0"
+                                                        WidthRequest="42" HeightRequest="42"
+                                                        BackgroundColor="{StaticResource PrimaryTint}"
+                                                        StrokeThickness="0"
+                                                        StrokeShape="RoundRectangle 21"
+                                                        VerticalOptions="Center">
+                                                    <Border.Triggers>
+                                                        <DataTrigger TargetType="Border" Binding="{Binding IsEnabled}" Value="False">
+                                                            <Setter Property="BackgroundColor" Value="{StaticResource SurfaceAlt}" />
+                                                        </DataTrigger>
+                                                    </Border.Triggers>
+                                                    <Label Text="{Binding Initials}"
+                                                           FontSize="14"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{StaticResource Primary}"
+                                                           HorizontalOptions="Center"
+                                                           VerticalOptions="Center">
+                                                        <Label.Triggers>
+                                                            <DataTrigger TargetType="Label" Binding="{Binding IsEnabled}" Value="False">
+                                                                <Setter Property="TextColor" Value="{StaticResource TextMuted}" />
+                                                            </DataTrigger>
+                                                        </Label.Triggers>
+                                                    </Label>
+                                                </Border>
+
+                                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                                    <Label Text="{Binding Name}"
+                                                           FontSize="17"
+                                                           FontAttributes="Bold"
+                                                           TextColor="{StaticResource TextPrimary}"
+                                                           LineBreakMode="TailTruncation" />
+
+                                                    <Border BackgroundColor="{StaticResource SuccessTint}"
+                                                            StrokeThickness="0"
+                                                            StrokeShape="RoundRectangle 10"
+                                                            Padding="9,3"
+                                                            HorizontalOptions="Start">
+                                                        <Border.Triggers>
+                                                            <DataTrigger TargetType="Border" Binding="{Binding IsEnabled}" Value="False">
+                                                                <Setter Property="BackgroundColor" Value="{StaticResource SurfaceAlt}" />
+                                                            </DataTrigger>
+                                                        </Border.Triggers>
+                                                        <Label Text="{Binding StatusLabel}"
+                                                               FontSize="10"
+                                                               FontAttributes="Bold"
+                                                               CharacterSpacing="1"
+                                                               TextColor="{StaticResource Success}">
+                                                            <Label.Triggers>
+                                                                <DataTrigger TargetType="Label" Binding="{Binding IsEnabled}" Value="False">
+                                                                    <Setter Property="TextColor" Value="{StaticResource TextMuted}" />
+                                                                </DataTrigger>
+                                                            </Label.Triggers>
+                                                        </Label>
+                                                    </Border>
+                                                </VerticalStackLayout>
+
+                                                <Button Grid.Column="2"
+                                                        Text="Cambiar contraseña"
+                                                        Style="{StaticResource BorderlessButton}"
+                                                        Command="{Binding Source={x:Reference Root}, Path=BindingContext.ChangePasswordCommand}"
+                                                        CommandParameter="{Binding .}" />
+
+                                                <!-- El texto dice qué VA A PASAR ("Desactivar"),
+                                                     no en qué estado está: un botón que se llama
+                                                     igual que el estado actual se lee al revés. -->
+                                                <Button Grid.Column="3"
+                                                        Text="{Binding ToggleLabel}"
+                                                        Style="{StaticResource BorderlessButton}"
+                                                        Command="{Binding Source={x:Reference Root}, Path=BindingContext.ToggleEnabledCommand}"
+                                                        CommandParameter="{Binding .}" />
+
+                                                <!-- Eliminar va al extremo, separado y en rojo:
+                                                     es la única acción sin vuelta atrás. Pide
+                                                     confirmación antes de ejecutarse. -->
+                                                <Button Grid.Column="4"
+                                                        Text="Eliminar"
+                                                        Style="{StaticResource BorderlessButton}"
+                                                        TextColor="{StaticResource Error}"
+                                                        Clicked="OnRemoveClicked"
+                                                        CommandParameter="{Binding Name}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+
+                <Button Text="←  Volver al menú"
+                        Style="{StaticResource SecondaryButton}"
+                        MinimumWidthRequest="230"
+                        HorizontalOptions="Center"
+                        Command="{x:Static shell:AppShell.BackHomeCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

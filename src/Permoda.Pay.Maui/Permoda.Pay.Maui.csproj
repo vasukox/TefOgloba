@@ -1,0 +1,230 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0-android</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Permoda.Pay.Maui</RootNamespace>
+		<AssemblyName>TefOgloba</AssemblyName>
+		<UseMaui>true</UseMaui>
+		<SingleProject>true</SingleProject>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<!-- Dos identificadores distintos, y conviene no confundirlos:
+
+		     · HiPosApkName (`permoglobal`) es la LLAVE DE ENRUTAMIENTO. Va dentro de las 11
+		       acciones y lo registra ICG en CloudLicense. HiPOS nunca busca "la app de
+		       Permoda": arma un intent implícito con esa acción y le pregunta a Android si
+		       alguien responde. El package no participa en esa pregunta.
+
+		       CÓMO SE SUPO: descargando el APK que CloudLicense distribuye y leyendo su
+		       manifiesto con aapt2. Resultó ser NUESTRO propio APK, dado de alta con
+		       `permoglobal` — un nombre que el APK no declaraba. Eso cerraba un bucle: la nube
+		       pedía `permoglobal`, nadie resolvía, HiPOS lo leía como "módulo no instalado",
+		       bajaba el APK (el nuestro) y volvía a empezar en cada arranque. Reinstalar a mano
+		       no lo rompía.
+
+		       Se adivinaron cinco nombres antes de este y ninguno acertó, porque el fallo no
+		       deja rastro: sin resolución Android no arranca nada y no hay línea en logcat —
+		       "no nos llamaron" se ve idéntico a "nos llamaron con otro nombre". La lección es
+		       que el apk_name no se adivina: se lee del APK que la nube distribuye.
+
+		       `permoda` NO se declara: es del módulo de Sistecrédito (com.pos2pay) y declararlo
+		       hacía que Android mostrara el selector "Completar acción usando…" en mitad de una
+		       venta. Los demás candidatos no colisionan con nadie y quedan como red de
+		       seguridad. Comprobación en terminal (con `cmd package query-activities`, pasándole
+		       la acción con -a) para ver TODOS los que responden, no solo el primero.
+
+		     · ApplicationId es el package con el que Android instala. Lo define Permoda.
+		       `com.permoda.tefogloba` identifica la app como nuestra y evita la colisión con
+		       `com.pos2pay`, que es el package del otro módulo TEF de la terminal: dos APK con el
+		       mismo package no pueden coexistir, instalar uno desinstala el otro
+		       (INSTALL_FAILED_UPDATE_INCOMPATIBLE).
+
+		     El nombre que ve el cajero en la pantalla de medios de pago NO sale de aquí: lo
+		     responde el módulo en GET_CUSTOM_PARAMS (ver HiPosPaymentOrchestrator.ModuleDisplayName).
+		     Mantener AndroidManifest.xml y HiPosPaymentActivity.cs en sync con el apk_name. -->
+		<ApplicationTitle>TefOgloba</ApplicationTitle>
+		<ApplicationId>com.permoda.tefogloba</ApplicationId>
+		<ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+		<!-- SIEMPRE 1. HiPOS compara este número contra el registrado en CloudLicense y, si no
+		     coinciden exactamente, da el módulo por desactualizado y pide reinstalarlo en cada
+		     arranque — el bucle que ya costó dos días. Tiene que moverse a la par de
+		     HiPosPaymentOrchestrator.ModuleVersionCode y del alta en CloudLicense, nunca solo. -->
+		<ApplicationVersion>1</ApplicationVersion>
+		<SupportedOSPlatformVersion>33.0</SupportedOSPlatformVersion>
+		<AndroidPackageFormats>apk</AndroidPackageFormats>
+		<HiPosApkName>permoglobal</HiPosApkName>
+		<Configurations>Debug;UAT;Release</Configurations>
+		<!-- Los "marshal methods" generan el registro JNI dentro de libxamarin-app.so en vez de
+		     resolverlo por reflexión al arrancar. Están activos por defecto en configuraciones
+		     optimizadas, y en este proyecto rompen las compilaciones INCREMENTALES: el .so queda
+		     con el registro de la compilación anterior y no coincide con los ensamblados que lo
+		     acompañan.
+
+		     Cuando eso pasa, la app muere en el arranque, ANTES de ejecutar una línea nuestra:
+
+		       java.lang.UnsatisfiedLinkError: No implementation found for
+		       void crc...MauiApplication.n_onCreate()
+
+		     y desde HiPOS se ve como "el módulo no se puede iniciar", porque el proceso muere sin
+		     alcanzar a responderle al POS. Medido en terminal (2026-08-28): tres compilaciones
+		     incrementales seguidas produjeron APK que crashean, y borrar obj/ y bin/ produjo uno
+		     sano en cada caso. El síntoma no distingue un APK roto de un bug de código —arranca
+		     igual de mal—, así que apagarlo cuesta unos milisegundos de arranque y evita entregar
+		     un APK muerto sin darse cuenta. -->
+		<AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+		<AppEnvironment>Development</AppEnvironment>
+		<DefineConstants>$(DefineConstants);ENVIRONMENT_DEVELOPMENT</DefineConstants>
+		<!-- Inflado de XAML por reflexión: solo en Debug (compatible con XAML Hot Reload).
+		     En UAT/Release se usa el inflador compilado por defecto, que es seguro frente
+		     al trimming (evita Arg_NoDefCTor en controles usados solo desde XAML). -->
+		<MauiXamlInflator>SourceGen</MauiXamlInflator>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'UAT'">
+		<AppEnvironment>UAT</AppEnvironment>
+		<DefineConstants>$(DefineConstants);ENVIRONMENT_UAT</DefineConstants>
+		<DebugSymbols>false</DebugSymbols>
+		<Optimize>true</Optimize>
+
+		<!-- MISMA forma de binario que Release, a propósito. Antes UAT iba sin AOT y sin
+		     trimmer mientras producción sí los lleva, y eso vaciaba el sentido de UAT: se
+		     ensayaba sobre un binario que no era el que iba a salir. Justamente lo que hay que
+		     ensayar —que el trimmer no borre una vista que solo se nombra desde XAML, el viejo
+		     Arg_NoDefCTor— es invisible si el APK de prueba no está recortado.
+
+		     El razonamiento de cada bandera está en el PropertyGroup de Release. Si allá
+		     cambian, acá también: el día que se separen, UAT deja de probar lo que se despliega. -->
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
+		<RunAOTCompilation>true</RunAOTCompilation>
+		<AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+		<AndroidStripILAfterAOT>false</AndroidStripILAfterAOT>
+		<RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
+		<!-- Release debe apuntar a Producción (co-prod.ogloba.com).
+		     Antes definía ENVIRONMENT_UAT, por lo que AppEnvironment nunca alcanzaba
+		     la rama de Producción y un APK productivo transaccionaba contra el servidor
+		     de pruebas co-ts.ogloba.com. -->
+		<AppEnvironment>Production</AppEnvironment>
+		<DefineConstants>$(DefineConstants);ENVIRONMENT_PRODUCTION</DefineConstants>
+		<DebugSymbols>false</DebugSymbols>
+		<Optimize>true</Optimize>
+
+		<!-- ===== ARRANQUE EN FRÍO =====
+
+		     Sin esto el APK no lleva UNA SOLA imagen AOT: los 32 MB de
+		     lib/arm64-v8a/libassembly-store.so son IL puro, y el runtime tiene que JITearlo
+		     entero cada vez que HiPOS levanta el módulo. En un Telpo C9H eso son varios
+		     segundos con el cajero y el cliente mirando la pantalla, y se nota justo donde
+		     más molesta: al elegir Ogloba como medio de pago.
+
+		     · TrimMode=partial es lo que hace esto seguro. Solo recorta los ensamblados que se
+		       declaran recortables ([AssemblyMetadata("IsTrimmable")]): el BCL y MAUI, que
+		       traen sus propios descriptores de ILLink. NUESTROS ensamblados quedan intactos,
+		       así que no puede volver el Arg_NoDefCTor que obligó a apagar el trimmer — ese
+		       fallo era el linker borrando el constructor de una vista que solo se nombra
+		       desde XAML (p. ej. StatusBannerView).
+
+		     · Profiled AOT compila de antemano solo la ruta de arranque, no la app entera.
+		       Es lo que ataca este problema sin inflar el APK.
+
+		     · StripILAfterAOT=false a propósito: el IL se queda. Lo que no entró en el perfil
+		       sigue pudiendo JITear, así que un método fuera del perfil se ejecuta más lento
+		       pero NUNCA falta. En un módulo de pago esa red vale los megas.
+
+		     OJO: esto cambia cómo se genera el binario, no qué hace. Verificar en terminal
+		     antes de repartir (ver docs/BUILD_Y_DESPLIEGUE.md). -->
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
+		<RunAOTCompilation>true</RunAOTCompilation>
+		<AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+		<AndroidStripILAfterAOT>false</AndroidStripILAfterAOT>
+
+		<!-- Solo arm64. Las terminales de KOAJ son Telpo C9H (Qualcomm lahaina, arm64-v8a);
+		     x86_64 solo existe para emuladores de escritorio y en el APK de producción eran
+		     32 MB de assembly-store que ninguna caja llega a abrir. Quitarlo parte el APK a la
+		     mitad, que es lo que baja CloudLicense a 512 tiendas en cada actualización.
+		     Debug y UAT no lo declaran, así que ahí se siguen compilando las dos y el emulador
+		     sirve para probar. -->
+		<RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+	</PropertyGroup>
+
+	<!-- Firma en las TRES configuraciones, con la misma llave. Android exige que toda
+	     actualización venga firmada con la misma llave que la instalación previa: si Debug
+	     usara la llave de depuración, pasar de una build de prueba a la de producción en una
+	     terminal obligaría a desinstalar (y perder configuración de tienda, PIN y cajeros).
+
+	     La llave es ogloba.keystore (alias `ogloba`, CN=Ogloba). Reemplazó a
+	     tefogloba.keystore, cuyo alias y DN eran `sistecredito`/`CN=SistecreditoTEF`: nombraba
+	     al módulo de otro proveedor y no había forma de saber quién más la custodiaba. Quien
+	     tenga la llave puede firmar un APK con nuestro package y suplantar el módulo.
+	     pos2pay-release.keystore no abre con ninguna contraseña conocida y quedó fuera de uso.
+
+	     Ni el keystore ni las contraseñas se commitean (ver .gitignore). Las contraseñas salen
+	     de PERMODA_KEYSTORE_PASS / PERMODA_KEY_PASS; si faltan, no se firma con esta llave en
+	     vez de romper el build de quien clone el repo sin acceso a ella. -->
+	<PropertyGroup>
+		<!-- ogloba-fresh.keystore reemplaza a ogloba.keystore, cuya contraseña se perdió: con la
+		     anterior ya no se podía firmar una actualización, y sin poder firmar no hay forma de
+		     actualizar las 512 terminales.
+
+		     CN=Ogloba, OU=Permoda.Pay, O=Permoda Ltda · RSA 2048 · SHA384withRSA · ~20 años
+		     SHA-1  93:91:29:16:58:4E:2F:11:EC:22:C2:3B:19:2D:56:F6:2D:BF:F3:C6
+		     SHA-256 7533b47409373b49682567a8c0d6d60e78a12bbaafdb1d818d97f3a9f1657f7b
+
+		     OJO al desplegar: la llave es DISTINTA de la anterior, así que Android rechaza la
+		     actualización sobre una instalación firmada con ogloba.keystore
+		     (INSTALL_FAILED_UPDATE_INCOMPATIBLE). La primera vez hay que DESINSTALAR, lo que borra
+		     PIN, credenciales de Ogloba y cajeros de esa caja. De ahí en adelante, actualización
+		     normal. -->
+		<PermodaKeystore Condition="'$(PermodaKeystore)' == ''">$(MSBuildThisFileDirectory)..\..\assets\keystore\ogloba-fresh.keystore</PermodaKeystore>
+		<PermodaCanSign Condition="Exists('$(PermodaKeystore)') And '$(PERMODA_KEYSTORE_PASS)' != '' And '$(PERMODA_KEY_PASS)' != ''">true</PermodaCanSign>
+		<AndroidKeyStore Condition="'$(PermodaCanSign)' == 'true'">true</AndroidKeyStore>
+		<AndroidSigningKeyStore Condition="'$(PermodaCanSign)' == 'true'">$(PermodaKeystore)</AndroidSigningKeyStore>
+		<AndroidSigningKeyAlias Condition="'$(PermodaCanSign)' == 'true'">ogloba</AndroidSigningKeyAlias>
+		<AndroidSigningStorePass Condition="'$(PermodaCanSign)' == 'true'">$(PERMODA_KEYSTORE_PASS)</AndroidSigningStorePass>
+		<AndroidSigningKeyPass Condition="'$(PermodaCanSign)' == 'true'">$(PERMODA_KEY_PASS)</AndroidSigningKeyPass>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Ícono del módulo: el logo de Ogloba sobre blanco, que es el fondo con el que la
+		     marca se presenta. El PNG de primer plano se genera desde ogloba_logo.jpeg con el
+		     margen blanco recortado y el logo ya centrado en el 60% del lienzo — la zona segura
+		     del ícono adaptativo de Android. Sin ese recorte previo, el launcher encoge otra vez
+		     un logo que ya venía flotando en su propio cuadro y queda una mancha en el centro.
+		     Una sola definición: cubre Debug, UAT y Release por igual. -->
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.png" Color="#FFFFFF" />
+		<!-- El splash usa el gris de la app, no blanco, para que el arranque no destelle contra
+		     el fondo de las pantallas (ver Platforms/Android/Resources/values/styles.xml). -->
+		<MauiSplashScreen Include="Resources\Splash\splash.png" Color="#F2F2F2" BaseSize="128,128" />
+		<!-- Iconos: MauiImage cubre PNG y SVG por igual. `MauiSvg` NO es un tipo de recurso
+		     de MAUI, así que los ic_*.svg quedaban fuera del APK y todos los iconos fallaban
+		     en runtime con FileNotFoundException. MAUI convierte cada SVG a PNG al compilar:
+		     por eso se referencian como "ic_card.png" y no ".svg" (ver Common/Icons.cs). -->
+		<MauiImage Include="Resources\Images\*" />
+		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
+		<MauiFont Include="Resources\Fonts\*" />
+		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Permoda.Pay.Application\Permoda.Pay.Application.csproj" />
+		<ProjectReference Include="..\Permoda.Pay.Infrastructure\Permoda.Pay.Infrastructure.csproj" />
+		<ProjectReference Include="..\Permoda.Pay.Maui.HiPos\Permoda.Pay.Maui.HiPos.csproj" />
+	</ItemGroup>
+
+</Project>

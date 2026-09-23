@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Permoda.Pay.Maui.Common.Behaviors"
+             x:Class="Permoda.Pay.Maui.Views.Pos.CashierLoginPage"
+             x:Name="Root"
+             BackgroundColor="{StaticResource Background}"
+             Shell.NavBarIsVisible="False"
+             Shell.FlyoutBehavior="Disabled"
+             Shell.PresentationMode="Animated"
+             Title="Ingreso">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Border Grid.Row="0"
+                Background="{StaticResource HeroBrush}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle"
+                Padding="28,26">
+            <VerticalStackLayout Spacing="6">
+                <Label Text="OGLOBA TEF" Style="{StaticResource HeroLabel}" />
+                <Label Text="Ingrese a su turno"
+                       FontSize="28"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource OnHero}" />
+                <Label Text="{Binding Summary}"
+                       FontSize="14"
+                       TextColor="{StaticResource OnHeroMuted}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="28,24,28,24" Spacing="14">
+
+                <!-- El formulario NO ocupa el ancho de la tablet: una columna angosta y centrada
+                     mantiene usuario, contraseña y botón dentro del mismo golpe de vista. A todo
+                     lo ancho, el botón queda a medio metro del campo que se acaba de llenar. -->
+                <Border Style="{StaticResource Card}"
+                        IsVisible="{Binding ShowForm}"
+                        MaximumWidthRequest="620"
+                        HorizontalOptions="Center">
+                    <Border.Behaviors>
+                        <behaviors:EntranceBehavior />
+                    </Border.Behaviors>
+                    <VerticalStackLayout Spacing="14">
+
+                        <Label Text="USUARIO" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource InputField}">
+                            <Entry x:Name="UserEntry"
+                                   Placeholder="Tu usuario"
+                                   FontSize="19"
+                                   Keyboard="Plain"
+                                   IsSpellCheckEnabled="False"
+                                   IsTextPredictionEnabled="False"
+                                   Text="{Binding UserName, Mode=TwoWay}"
+                                   Completed="OnUserCompleted"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                        </Border>
+
+                        <Label Text="CONTRASEÑA" Style="{StaticResource FieldLabel}" />
+                        <Border Style="{StaticResource InputField}">
+                            <Entry x:Name="PasswordEntry"
+                                   Placeholder="Tu contraseña"
+                                   IsPassword="True"
+                                   FontSize="19"
+                                   Text="{Binding Password, Mode=TwoWay}"
+                                   ReturnCommand="{Binding SignInCommand}"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                        </Border>
+
+                        <!-- El motivo va ARRIBA del botón, no debajo: es lo que hay que leer antes
+                             de volver a intentar. -->
+                        <Label Text="{Binding Message}"
+                               FontSize="13"
+                               TextColor="{StaticResource Error}"
+                               LineBreakMode="WordWrap"
+                               IsVisible="{Binding HasMessage}" />
+
+                        <Button Text="Entrar"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="56"
+                                Command="{Binding SignInCommand}"
+                                IsEnabled="{Binding CanSignIn}" />
+
+                        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                           IsVisible="{Binding IsBusy}"
+                                           Color="{StaticResource Primary}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Sin cajeros dados de alta no hay contra qué validar. En vez de un formulario
+                     que siempre va a fallar, se dice qué falta y se ofrece el camino. -->
+                <Border Style="{StaticResource Card}"
+                        IsVisible="{Binding HasNoCashiers}"
+                        MaximumWidthRequest="520"
+                        HorizontalOptions="Center">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Esta caja no tiene cajeros registrados"
+                               FontSize="17"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextPrimary}" />
+                        <Label Text="El administrador debe darlos de alta con su contraseña antes de poder operar."
+                               Style="{StaticResource Caption}" />
+                        <Button Text="Registrar cajeros"
+                                Style="{StaticResource PrimaryButton}"
+                                HeightRequest="54"
+                                Command="{Binding GoToSetupCommand}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Puerta del administrador. Esta pantalla apaga el menú lateral, así que sin
+                     esto era un callejón sin salida: para entrar a configurar hacía falta un
+                     usuario de cajero, que es justo lo que el administrador puede no tener.
+
+                     Deliberadamente DISCRETO y fuera de la tarjeta. Lo que el cajero viene a
+                     hacer acá es abrir su turno; un botón de administración con el mismo peso
+                     visual compite con eso e invita a tocarlo a quien no debe. No se esconde
+                     —esconderlo no protege, solo confunde a quien sí tiene el PIN— pero tampoco
+                     se ofrece. Quien lo necesita lo encuentra.
+
+                     Visible SIEMPRE, con o sin cajeros dados de alta: el caso que hay que
+                     resolver es precisamente la caja ya montada, donde "Registrar cajeros"
+                     desaparece. -->
+                <Button Text="Configuración de administrador"
+                        Style="{StaticResource BorderlessButton}"
+                        FontSize="14"
+                        HeightRequest="48"
+                        Margin="0,10,0,0"
+                        HorizontalOptions="Center"
+                        Command="{Binding GoToAdminCommand}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
